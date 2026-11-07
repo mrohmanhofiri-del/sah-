@@ -1,4 +1,4 @@
-const CACHE = 'wedding-planner-v2';
+const CACHE = 'wedding-planner-v3';
 const SHELL = ['./', './index.html', './config.js', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png',
   'https://cdn.tailwindcss.com', 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'];
 
@@ -17,6 +17,13 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || !req.url.startsWith('http')) return;
   if (new URL(req.url).hostname.endsWith('supabase.co')) return;
+  const u = new URL(req.url);
+  const fresh = req.mode === 'navigate' || (u.origin === location.origin && /\/(index\.html|config\.js)?$/.test(u.pathname));
+  if (fresh) {
+    e.respondWith(fetch(req).then((res) => { const c = res.clone(); caches.open(CACHE).then((x) => x.put(req, c)); return res; })
+      .catch(() => caches.match(req).then((m) => m || caches.match('./index.html'))));
+    return;
+  }
   e.respondWith(
     caches.open(CACHE).then(async (cache) => {
       const cached = await cache.match(req, { ignoreSearch: false });

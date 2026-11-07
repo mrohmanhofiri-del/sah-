@@ -34,3 +34,8 @@ Aplikasi memakai Anonymous Auth dengan satu set data bersama (sesuai skema PRD, 
 - **Vendor**: daftar vendor (kategori, kontak, nilai kontrak, catatan) dengan catatan pembayaran DP / cicilan / pelunasan, tenggat bayar, dan status dibayar.
 - **Kalender**: tugas dan tenggat pembayaran per tanggal, plus penanda Hari H.
 - Migrasi: `supabase/migrations/20261108000000_vendors.sql` (dijalankan otomatis oleh GitHub Actions).
+
+## Mode demo & sinkronisasi
+- Ikon pengaturan → **Isi data contoh** / **Hapus semua data**.
+- Semua menu memakai satu sumber data: tanda selesai tugas, pembayaran vendor, dan budget langsung memperbarui kalender, tab vendor, dan saldo budget. Data dimuat ulang otomatis saat aplikasi dibuka kembali, saat online, dan lewat realtime antar perangkat.
+- Pembayaran vendor yang sudah dibayar otomatis dihitung di "Total terpakai" tab Budget. Jangan mencatatnya lagi sebagai item budget.
