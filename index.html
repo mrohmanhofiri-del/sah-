@@ -965,6 +965,40 @@
     runDemo(async () => { await wipeAll(); await seedDemo(); }, 'Data contoh dimuat.');
   });
 
+  /* ---------- Pemilihan mempelai ---------- */
+  const LAST_KEY = 'wp-last-profile';
+  const lastProfile = () => { try { return localStorage.getItem(LAST_KEY); } catch (e) { return null; } };
+  function showPicker() {
+    const last = lastProfile();
+    $('picker-list').innerHTML = Object.entries(PROFILES).map(([k, p]) => `<button data-profile="${k}" class="w-full min-h-[96px] rounded-2xl bg-white border-2 ${k === last ? 'border-emerald-600' : 'border-slate-200'} text-left px-6 py-4 hover:border-emerald-600 transition-colors duration-150">
+        <span class="block text-2xl font-semibold text-slate-800">${p.name}</span>
+        <span class="block text-sm text-slate-500">${k === last ? 'Terakhir dibuka' : 'Buka planner pernikahan ' + p.name}</span></button>`).join('');
+    $('picker').classList.remove('hidden');
+  }
+  $('picker-list').addEventListener('click', (e) => { const b = e.target.closest('[data-profile]'); if (b) selectProfile(b.dataset.profile); });
+  $('btn-switch').addEventListener('click', showPicker);
+
+  async function selectProfile(p) {
+    $('picker').classList.add('hidden');
+    try { localStorage.setItem(LAST_KEY, p); } catch (e) { /* abaikan */ }
+    if (p === state.profile && state.ready) return;
+    state.profile = p;
+    $('profile-name').textContent = PROFILES[p].name;
+    document.title = 'Wedding Planner · ' + PROFILES[p].name;
+    // kosongkan seluruh data acara sebelumnya agar tidak bercampur
+    state.settings = null; state.tasks = []; state.budgets = []; state.vendors = []; state.payments = [];
+    state.settingsLoaded = false; state.ready = false;
+    const live = !!sb && !state.authFailed;
+    state.loadingTasks = state.loadingBudget = state.loadingVendor = live;
+    state.fStatus = 'all'; state.fCat = ''; state.fTime = '';
+    $('f-cat').value = ''; $('f-time').value = ''; renderChips();
+    const n = new Date(); state.cal = { y: n.getFullYear(), m: n.getMonth() }; state.calSel = todayStr();
+    $('countdown').className = 'mt-1 grid grid-cols-4 gap-2 text-center';
+    $('countdown').innerHTML = '<div class="skeleton skeleton-pulse h-14"></div>'.repeat(4);
+    setView('task'); renderAll();
+    if (state.authed) { await refreshAll(); state.ready = true; }
+  }
+
   /* ---------- PWA ---------- */
   if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 
