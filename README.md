@@ -29,3 +29,8 @@ Tambahkan file `.sql` baru di `supabase/migrations/` (format nama `YYYYMMDDHHMMS
 
 ## Catatan keamanan
 Aplikasi memakai Anonymous Auth dengan satu set data bersama (sesuai skema PRD, tanpa `user_id`). Siapa pun yang memiliki URL dan anon key dapat masuk anonim dan membaca/mengubah data. Cocok untuk penggunaan pribadi; jika URL disebarkan luas, tambahkan kolom `user_id` atau login email.
+
+## Fitur tambahan
+- **Vendor**: daftar vendor (kategori, kontak, nilai kontrak, catatan) dengan catatan pembayaran DP / cicilan / pelunasan, tenggat bayar, dan status dibayar.
+- **Kalender**: tugas dan tenggat pembayaran per tanggal, plus penanda Hari H.
+- Migrasi: `supabase/migrations/20261108000000_vendors.sql` (dijalankan otomatis oleh GitHub Actions).

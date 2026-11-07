@@ -1,4 +1,4 @@
-const CACHE = 'wedding-planner-v1';
+const CACHE = 'wedding-planner-v2';
 const SHELL = ['./', './index.html', './config.js', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png',
   'https://cdn.tailwindcss.com', 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'];
 

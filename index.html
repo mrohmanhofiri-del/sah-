@@ -72,6 +72,38 @@
     <div id="budget-summary"></div>
     <div id="budget-list" class="mt-4 flex flex-col gap-4"></div>
   </section>
+  <!-- VIEW 3: KALENDER -->
+  <section id="view-calendar" class="hidden">
+    <div class="flex items-center justify-between">
+      <button id="cal-prev" aria-label="Bulan sebelumnya" class="w-11 h-11 flex items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 transition-colors duration-150">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      <div class="text-center">
+        <div id="cal-title" class="font-semibold text-slate-800"></div>
+        <button id="cal-today" class="min-h-[44px] px-3 text-sm font-medium text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors duration-150">Ke hari ini</button>
+      </div>
+      <button id="cal-next" aria-label="Bulan berikutnya" class="w-11 h-11 flex items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 transition-colors duration-150">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+    <div class="grid grid-cols-7 gap-1 mt-1 text-center text-xs text-slate-500">
+      <div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div><div>Min</div>
+    </div>
+    <div id="cal-grid" class="grid grid-cols-7 gap-1 mt-1"></div>
+    <p class="mt-3 text-sm text-slate-500 flex flex-wrap items-center gap-x-4 gap-y-1">
+      <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-600"></span>Tugas</span>
+      <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-amber-500"></span>Pembayaran</span>
+      <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-600"></span>Terlambat</span>
+      <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300"></span>Selesai</span>
+    </p>
+    <div id="cal-day" class="mt-4 flex flex-col gap-3"></div>
+  </section>
+
+  <!-- VIEW 4: VENDOR -->
+  <section id="view-vendor" class="hidden">
+    <div id="vendor-summary"></div>
+    <div id="vendor-list" class="mt-4 flex flex-col gap-4"></div>
+  </section>
 </main>
 
 <!-- FAB -->
@@ -81,10 +113,18 @@
 
 <!-- BOTTOM NAV -->
 <nav class="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200" style="padding-bottom:env(safe-area-inset-bottom)">
-  <div class="max-w-md mx-auto grid grid-cols-2">
+  <div class="max-w-md mx-auto grid grid-cols-4">
     <button data-nav="task" class="nav-btn h-16 flex flex-col items-center justify-center gap-0.5 text-sm transition-colors duration-150">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>
       Tasklist
+    </button>
+    <button data-nav="calendar" class="nav-btn h-16 flex flex-col items-center justify-center gap-0.5 text-sm transition-colors duration-150">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M3 10h18M8 3v4M16 3v4"/></svg>
+      Kalender
+    </button>
+    <button data-nav="vendor" class="nav-btn h-16 flex flex-col items-center justify-center gap-0.5 text-sm transition-colors duration-150">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 9l1.5-5h13L20 9M4 9h16M4 9v11h16V9M9 20v-6h6v6"/></svg>
+      Vendor
     </button>
     <button data-nav="budget" class="nav-btn h-16 flex flex-col items-center justify-center gap-0.5 text-sm transition-colors duration-150">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path stroke-linecap="round" d="M3 10h18M7 15h3"/></svg>
@@ -164,6 +204,75 @@
   </form>
 </dialog>
 
+<!-- DIALOG: VENDOR -->
+<dialog id="dlg-vendor" class="m-auto w-[92%] max-w-md rounded-2xl p-0 backdrop:bg-black/40">
+  <form id="form-vendor" method="dialog" class="p-5 flex flex-col gap-4">
+    <h2 id="vendor-dlg-title" class="text-lg font-semibold">Tambah vendor</h2>
+    <div>
+      <label for="v-name" class="block text-sm font-medium text-slate-700 mb-1">Nama vendor</label>
+      <input id="v-name" required maxlength="120" class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-base">
+    </div>
+    <div>
+      <label for="v-cat" class="block text-sm font-medium text-slate-700 mb-1">Kategori</label>
+      <select id="v-cat" class="w-full min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 text-base"></select>
+    </div>
+    <div>
+      <label for="v-phone" class="block text-sm font-medium text-slate-700 mb-1">Nomor telepon / WhatsApp</label>
+      <input id="v-phone" type="tel" inputmode="tel" maxlength="30" class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-base">
+    </div>
+    <div>
+      <label for="v-total" class="block text-sm font-medium text-slate-700 mb-1">Nilai kontrak (Rp)</label>
+      <input id="v-total" inputmode="numeric" class="money w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-base" value="0">
+    </div>
+    <div>
+      <label for="v-notes" class="block text-sm font-medium text-slate-700 mb-1">Catatan</label>
+      <textarea id="v-notes" rows="3" maxlength="500" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-base"></textarea>
+    </div>
+    <div class="flex gap-2 pt-1">
+      <button type="button" id="v-delete" class="hidden min-h-[44px] px-4 rounded-lg text-rose-600 font-medium hover:bg-rose-50 transition-colors duration-150">Hapus</button>
+      <span class="flex-1"></span>
+      <button type="button" data-close class="min-h-[44px] px-4 rounded-lg text-slate-600 font-medium hover:bg-slate-100 transition-colors duration-150">Batal</button>
+      <button type="submit" class="min-h-[44px] px-5 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors duration-150">Simpan vendor</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- DIALOG: PEMBAYARAN VENDOR -->
+<dialog id="dlg-payment" class="m-auto w-[92%] max-w-md rounded-2xl p-0 backdrop:bg-black/40">
+  <form id="form-payment" method="dialog" class="p-5 flex flex-col gap-4">
+    <div>
+      <h2 id="pay-dlg-title" class="text-lg font-semibold">Tambah pembayaran</h2>
+      <p id="pay-dlg-vendor" class="text-sm text-slate-500"></p>
+    </div>
+    <div>
+      <label for="p-label" class="block text-sm font-medium text-slate-700 mb-1">Jenis pembayaran</label>
+      <select id="p-label" class="w-full min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 text-base"></select>
+    </div>
+    <div>
+      <label for="p-amount" class="block text-sm font-medium text-slate-700 mb-1">Jumlah (Rp)</label>
+      <input id="p-amount" inputmode="numeric" required class="money w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-base">
+    </div>
+    <div>
+      <label for="p-due" class="block text-sm font-medium text-slate-700 mb-1">Tenggat bayar</label>
+      <input id="p-due" type="date" required class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-base">
+    </div>
+    <label class="flex items-center gap-3 min-h-[44px] text-base">
+      <input id="p-paid" type="checkbox" class="w-6 h-6 accent-emerald-600">
+      Sudah dibayar
+    </label>
+    <div id="p-paidwrap" class="hidden">
+      <label for="p-paiddate" class="block text-sm font-medium text-slate-700 mb-1">Tanggal dibayar</label>
+      <input id="p-paiddate" type="date" class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-base">
+    </div>
+    <div class="flex gap-2 pt-1">
+      <button type="button" id="p-delete" class="hidden min-h-[44px] px-4 rounded-lg text-rose-600 font-medium hover:bg-rose-50 transition-colors duration-150">Hapus</button>
+      <span class="flex-1"></span>
+      <button type="button" data-close class="min-h-[44px] px-4 rounded-lg text-slate-600 font-medium hover:bg-slate-100 transition-colors duration-150">Batal</button>
+      <button type="submit" class="min-h-[44px] px-5 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors duration-150">Simpan pembayaran</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="toast" class="hidden fixed top-24 inset-x-4 z-50 max-w-md mx-auto rounded-lg bg-slate-800 text-white text-sm px-4 py-3 shadow-lg"></div>
 
 <script>
@@ -181,7 +290,9 @@
 
   const state = { tasks: [], budgets: [], settings: null, view: 'task',
     fStatus: 'all', fCat: '', fTime: '', loadingTasks: true, loadingBudget: true,
-    editTask: null, editBudget: null };
+    editTask: null, editBudget: null,
+    vendors: [], payments: [], loadingVendor: true, editVendor: null, editPay: null, payVendor: null,
+    cal: { y: new Date().getFullYear(), m: new Date().getMonth() }, calSel: todayStr() };
 
   /* ---------- Supabase ---------- */
   const cfg = window.APP_CONFIG || {};
@@ -196,19 +307,21 @@
   function banner(html) { const b = $('banner'); b.innerHTML = `<div class="rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-sm p-3">${html}</div>`; b.classList.remove('hidden'); }
 
   async function init() {
-    renderChips(); fillSelects(); setView('task'); renderTasks(); renderBudget();
-    if (!sb) { banner('Aplikasi belum terhubung ke Supabase. Isi <code>SUPABASE_URL</code> dan <code>SUPABASE_ANON_KEY</code> (lihat README).'); state.loadingTasks = state.loadingBudget = false; renderTasks(); renderBudget(); renderCountdown(); return; }
+    renderChips(); fillSelects(); setView('task'); renderTasks(); renderBudget(); renderVendors();
+    if (!sb) { banner('Aplikasi belum terhubung ke Supabase. Isi <code>SUPABASE_URL</code> dan <code>SUPABASE_ANON_KEY</code> (lihat README).'); state.loadingTasks = state.loadingBudget = state.loadingVendor = false; renderVendors(); renderTasks(); renderBudget(); renderCountdown(); return; }
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { const { error } = await sb.auth.signInAnonymously(); if (error) throw error; }
     } catch (e) {
       banner('Gagal masuk. Aktifkan <b>Anonymous sign-ins</b> di Supabase: Authentication → Sign In / Providers.');
-      state.loadingTasks = state.loadingBudget = false; renderTasks(); renderBudget(); return;
+      state.loadingTasks = state.loadingBudget = state.loadingVendor = false; renderVendors(); renderTasks(); renderBudget(); return;
     }
-    await Promise.all([loadSettings(), loadTasks(), loadBudgets()]);
+    await Promise.all([loadSettings(), loadTasks(), loadBudgets(), loadVendors(), loadPayments()]);
     sb.channel('wp-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, loadTasks)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'budgets' }, loadBudgets)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, loadVendors)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vendor_payments' }, loadPayments)
       .subscribe();
   }
 
@@ -221,7 +334,7 @@
     const { data, error } = await sb.from('tasks').select('*').order('due_date', { ascending: true });
     state.loadingTasks = false;
     if (error) toast('Gagal memuat tugas. Periksa koneksi.'); else state.tasks = data;
-    renderTasks();
+    renderTasks(); renderCalendar();
   }
   async function loadBudgets() {
     const { data, error } = await sb.from('budgets').select('*').order('item_name', { ascending: true });
@@ -255,17 +368,19 @@
   setInterval(renderCountdown, 10000);
 
   /* ---------- Navigasi ---------- */
+  const VIEWS = ['task', 'calendar', 'vendor', 'budget'];
+  const FAB_LABEL = { task: 'Tambah tugas', calendar: 'Tambah tugas', vendor: 'Tambah vendor', budget: 'Tambah pengeluaran' };
   function setView(v) {
     state.view = v;
-    $('view-task').classList.toggle('hidden', v !== 'task');
-    $('view-budget').classList.toggle('hidden', v !== 'budget');
+    VIEWS.forEach((n) => $('view-' + n).classList.toggle('hidden', n !== v));
     document.querySelectorAll('.nav-btn').forEach((b) => {
       const on = b.dataset.nav === v;
       b.classList.toggle('text-emerald-600', on); b.classList.toggle('font-semibold', on);
       b.classList.toggle('text-slate-500', !on);
       b.setAttribute('aria-current', on ? 'page' : 'false');
     });
-    $('fab').setAttribute('aria-label', v === 'task' ? 'Tambah tugas' : 'Tambah pengeluaran');
+    $('fab').setAttribute('aria-label', FAB_LABEL[v]);
+    if (v === 'calendar') renderCalendar();
   }
   document.querySelectorAll('.nav-btn').forEach((b) => b.addEventListener('click', () => setView(b.dataset.nav)));
 
@@ -342,12 +457,12 @@
   const guard = () => { if (!sb) { toast('Hubungkan Supabase terlebih dahulu.'); return false; } return true; };
 
   /* ---------- Dialog tugas ---------- */
-  function openTask(t) {
+  function openTask(t, presetDate) {
     state.editTask = t || null;
     $('task-dlg-title').textContent = t ? 'Ubah tugas' : 'Tambah tugas';
     $('t-title').value = t ? t.title : '';
     $('t-cat').value = t ? t.category : CATEGORIES[0];
-    $('t-due').value = t ? t.due_date : todayStr();
+    $('t-due').value = t ? t.due_date : (presetDate || todayStr());
     $('t-delete').classList.toggle('hidden', !t);
     $('dlg-task').showModal();
   }
@@ -452,7 +567,241 @@
   });
 
   /* ---------- FAB ---------- */
-  $('fab').addEventListener('click', () => (state.view === 'task' ? openTask() : openBudget()));
+  $('fab').addEventListener('click', () => {
+    if (state.view === 'task') openTask();
+    else if (state.view === 'calendar') openTask(null, state.calSel);
+    else if (state.view === 'vendor') openVendor();
+    else openBudget();
+  });
+
+  /* ---------- Vendor, pembayaran, kalender ---------- */
+  const VENDOR_CATS = ['Venue', 'Katering', 'Dekorasi', 'Pakaian', 'Fotografi', 'MUA', 'Undangan', 'Hiburan', 'Lainnya'];
+  const PAY_LABELS = ['DP', 'Cicilan', 'Pelunasan', 'Lainnya'];
+  $('v-cat').innerHTML = VENDOR_CATS.map((c) => `<option>${c}</option>`).join('');
+  $('p-label').innerHTML = PAY_LABELS.map((c) => `<option>${c}</option>`).join('');
+
+  const daysUntil = (s) => Math.round((parseDate(s) - parseDate(todayStr())) / 864e5);
+  const vendorName = (id) => (state.vendors.find((v) => v.id === id) || {}).name || 'Vendor';
+  const payStatus = (p) => p.paid_date ? 'paid' : p.due_date < todayStr() ? 'overdue' : daysUntil(p.due_date) <= 7 ? 'soon' : 'pending';
+  function payBadge(p) {
+    const s = payStatus(p);
+    if (s === 'paid') return `<span class="text-emerald-700">Dibayar ${fmtDate(p.paid_date)}</span>`;
+    if (s === 'overdue') return `<span class="text-rose-600 font-medium">Terlambat ${-daysUntil(p.due_date)} hari</span>`;
+    const d = daysUntil(p.due_date);
+    const t = d === 0 ? 'Jatuh tempo hari ini' : `Jatuh tempo ${d} hari lagi`;
+    return s === 'soon' ? `<span class="text-amber-600 font-medium">${t}</span>` : `<span class="text-slate-500">${t}</span>`;
+  }
+
+  async function loadVendors() {
+    const { data, error } = await sb.from('vendors').select('*').order('name', { ascending: true });
+    state.loadingVendor = false;
+    if (error) toast('Gagal memuat vendor. Pastikan migrasi database sudah berjalan.'); else state.vendors = data;
+    renderVendors(); renderCalendar();
+  }
+  async function loadPayments() {
+    const { data, error } = await sb.from('vendor_payments').select('*').order('due_date', { ascending: true });
+    if (error) toast('Gagal memuat pembayaran vendor.'); else state.payments = data;
+    renderVendors(); renderCalendar();
+  }
+
+  /* --- Daftar vendor --- */
+  function renderVendors() {
+    const sum = $('vendor-summary'), list = $('vendor-list');
+    if (state.loadingVendor) {
+      sum.innerHTML = '<div class="skeleton skeleton-pulse h-28"></div>';
+      list.innerHTML = Array.from({ length: 2 }, () => '<div class="skeleton skeleton-pulse h-40"></div>').join(''); return;
+    }
+    const contract = state.vendors.reduce((a, v) => a + Number(v.total_cost), 0);
+    const paid = state.payments.filter((p) => p.paid_date).reduce((a, p) => a + Number(p.amount), 0);
+    const next = state.payments.filter((p) => !p.paid_date).sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
+    const nextTxt = next
+      ? `<div class="mt-3 pt-3 border-t border-slate-200 text-sm"><div class="text-slate-500">Tagihan terdekat</div>
+         <div class="font-medium">${esc(vendorName(next.vendor_id))}: ${esc(next.label)} ${rp(next.amount)}</div>
+         <div>${fmtDate(next.due_date)} &nbsp;|&nbsp; ${payBadge(next)}</div></div>`
+      : '';
+    sum.innerHTML = `<div class="rounded-xl bg-white border border-slate-200 p-4">
+      <div class="text-sm text-slate-500">Sisa tagihan vendor</div>
+      <div class="text-2xl font-semibold tabular-nums">${rp(contract - paid)}</div>
+      <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+        <div><div class="text-slate-500">Total kontrak</div><div class="font-medium tabular-nums">${rp(contract)}</div></div>
+        <div><div class="text-slate-500">Sudah dibayar</div><div class="font-medium tabular-nums">${rp(paid)}</div></div>
+      </div>${nextTxt}</div>`;
+    if (!state.vendors.length) {
+      list.innerHTML = '<div class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-500">Belum ada vendor. Ketuk tombol + untuk menambah vendor pertama.</div>'; return;
+    }
+    list.innerHTML = state.vendors.map((v) => {
+      const pays = state.payments.filter((p) => p.vendor_id === v.id).sort((a, b) => a.due_date.localeCompare(b.due_date));
+      const vPaid = pays.filter((p) => p.paid_date).reduce((a, p) => a + Number(p.amount), 0);
+      const late = pays.some((p) => payStatus(p) === 'overdue');
+      const payRows = pays.map((p) => `<div class="flex items-start gap-1 border-t border-slate-100">
+          <button data-ptoggle="${p.id}" role="checkbox" aria-checked="${!!p.paid_date}" aria-label="Tandai ${esc(p.label)} ${esc(v.name)} dibayar" class="shrink-0 w-11 h-11 flex items-center justify-center">
+            <span class="w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors duration-150 ${p.paid_date ? 'bg-emerald-600 border-emerald-600' : 'bg-white border-slate-400'}">
+              ${p.paid_date ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' : ''}
+            </span></button>
+          <button data-pedit="${p.id}" class="flex-1 text-left py-2 min-h-[44px]">
+            <div class="font-medium tabular-nums">${esc(p.label)}: ${rp(p.amount)}</div>
+            <div class="text-sm text-slate-500">Tenggat ${fmtDate(p.due_date)} &nbsp;|&nbsp; ${payBadge(p)}</div>
+          </button></div>`).join('');
+      return `<article class="rounded-xl bg-white border p-4 ${late ? 'border-rose-300' : 'border-slate-200'}">
+        <button data-vedit="${v.id}" class="text-left w-full min-h-[44px]">
+          <div class="text-sm text-slate-500">${esc(v.category)}</div>
+          <div class="font-medium text-slate-800">${esc(v.name)}</div>
+          <div class="text-sm text-slate-500 mt-0.5 tabular-nums">Kontrak: ${rp(v.total_cost)} &nbsp;|&nbsp; Dibayar: ${rp(vPaid)}</div>
+          <div class="text-sm ${Number(v.total_cost) - vPaid <= 0 && Number(v.total_cost) > 0 ? 'text-emerald-700 font-medium' : 'text-slate-500'} tabular-nums">${Number(v.total_cost) - vPaid <= 0 && Number(v.total_cost) > 0 ? 'Lunas' : 'Sisa: ' + rp(Number(v.total_cost) - vPaid)}</div>
+          ${v.notes ? `<div class="text-sm text-slate-500 mt-1">${esc(v.notes)}</div>` : ''}
+        </button>
+        ${v.phone ? `<a href="tel:${esc(v.phone.replace(/[^\d+]/g, ''))}" class="inline-flex items-center min-h-[44px] text-sm font-medium text-emerald-700">Hubungi ${esc(v.phone)}</a>` : ''}
+        <div class="mt-2">${payRows}</div>
+        <button data-padd="${v.id}" class="mt-1 min-h-[44px] w-full rounded-lg border border-emerald-600 text-emerald-700 font-medium hover:bg-emerald-50 transition-colors duration-150">Tambah pembayaran</button>
+      </article>`;
+    }).join('');
+  }
+
+  $('vendor-list').addEventListener('click', async (e) => {
+    const tg = e.target.closest('[data-ptoggle]');
+    if (tg) {
+      const p = state.payments.find((x) => x.id === tg.dataset.ptoggle); if (!p || !sb) return;
+      const prev = p.paid_date; p.paid_date = prev ? null : todayStr(); renderVendors(); renderCalendar();
+      const { error } = await sb.from('vendor_payments').update({ paid_date: p.paid_date }).eq('id', p.id);
+      if (error) { p.paid_date = prev; renderVendors(); renderCalendar(); toast('Gagal menyimpan status pembayaran.'); }
+      return;
+    }
+    const pe = e.target.closest('[data-pedit]');
+    if (pe) return openPayment(state.payments.find((x) => x.id === pe.dataset.pedit));
+    const pa = e.target.closest('[data-padd]');
+    if (pa) return openPayment(null, pa.dataset.padd);
+    const ve = e.target.closest('[data-vedit]');
+    if (ve) openVendor(state.vendors.find((x) => x.id === ve.dataset.vedit));
+  });
+
+  /* --- Dialog vendor --- */
+  function openVendor(v) {
+    state.editVendor = v || null;
+    $('vendor-dlg-title').textContent = v ? 'Ubah vendor' : 'Tambah vendor';
+    $('v-name').value = v ? v.name : '';
+    $('v-cat').value = v ? v.category : VENDOR_CATS[0];
+    $('v-phone').value = v ? v.phone : '';
+    setMoney($('v-total'), v ? v.total_cost : 0);
+    $('v-notes').value = v ? v.notes : '';
+    $('v-delete').classList.toggle('hidden', !v);
+    $('dlg-vendor').showModal();
+  }
+  $('form-vendor').addEventListener('submit', async (e) => {
+    e.preventDefault(); if (!guard()) return;
+    const row = { name: $('v-name').value.trim(), category: $('v-cat').value, phone: $('v-phone').value.trim(), total_cost: num($('v-total').value), notes: $('v-notes').value.trim() };
+    if (!row.name) return;
+    const q = state.editVendor ? sb.from('vendors').update(row).eq('id', state.editVendor.id) : sb.from('vendors').insert(row);
+    const { error } = await q;
+    if (error) return toast('Gagal menyimpan vendor.');
+    $('dlg-vendor').close(); loadVendors();
+  });
+  $('v-delete').addEventListener('click', async () => {
+    if (!state.editVendor || !guard() || !confirm('Hapus vendor ini beserta seluruh catatan pembayarannya?')) return;
+    const { error } = await sb.from('vendors').delete().eq('id', state.editVendor.id);
+    if (error) return toast('Gagal menghapus vendor.');
+    $('dlg-vendor').close(); loadVendors(); loadPayments();
+  });
+
+  /* --- Dialog pembayaran --- */
+  function syncPaidUI() { $('p-paidwrap').classList.toggle('hidden', !$('p-paid').checked); }
+  $('p-paid').addEventListener('change', () => { if ($('p-paid').checked && !$('p-paiddate').value) $('p-paiddate').value = todayStr(); syncPaidUI(); });
+  function openPayment(p, vendorId) {
+    state.editPay = p || null;
+    state.payVendor = p ? p.vendor_id : vendorId;
+    $('pay-dlg-title').textContent = p ? 'Ubah pembayaran' : 'Tambah pembayaran';
+    $('pay-dlg-vendor').textContent = vendorName(state.payVendor);
+    const first = !state.payments.some((x) => x.vendor_id === state.payVendor);
+    $('p-label').value = p ? p.label : (first ? 'DP' : 'Cicilan');
+    setMoney($('p-amount'), p ? p.amount : 0);
+    $('p-due').value = p ? p.due_date : todayStr();
+    $('p-paid').checked = !!(p && p.paid_date);
+    $('p-paiddate').value = p && p.paid_date ? p.paid_date : '';
+    syncPaidUI();
+    $('p-delete').classList.toggle('hidden', !p);
+    $('dlg-payment').showModal();
+  }
+  $('form-payment').addEventListener('submit', async (e) => {
+    e.preventDefault(); if (!guard()) return;
+    const paid = $('p-paid').checked;
+    const row = { vendor_id: state.payVendor, label: $('p-label').value, amount: num($('p-amount').value), due_date: $('p-due').value, paid_date: paid ? ($('p-paiddate').value || todayStr()) : null };
+    const q = state.editPay ? sb.from('vendor_payments').update(row).eq('id', state.editPay.id) : sb.from('vendor_payments').insert(row);
+    const { error } = await q;
+    if (error) return toast('Gagal menyimpan pembayaran.');
+    $('dlg-payment').close(); loadPayments();
+  });
+  $('p-delete').addEventListener('click', async () => {
+    if (!state.editPay || !guard() || !confirm('Hapus catatan pembayaran ini?')) return;
+    const { error } = await sb.from('vendor_payments').delete().eq('id', state.editPay.id);
+    if (error) return toast('Gagal menghapus pembayaran.');
+    $('dlg-payment').close(); loadPayments();
+  });
+
+  /* --- Kalender --- */
+  function buildAgenda() {
+    const m = {}; const add = (d, e) => { (m[d] = m[d] || []).push(e); };
+    state.tasks.forEach((t) => add(t.due_date, { type: 'task', t }));
+    state.payments.forEach((p) => add(p.due_date, { type: 'pay', p }));
+    return m;
+  }
+  function weddingDay() {
+    if (!state.settings) return null;
+    const d = new Date(state.settings.wedding_date);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+  function dotColor(e) {
+    if (e.type === 'task') return e.t.is_completed ? 'bg-slate-300' : isOverdue(e.t) ? 'bg-rose-600' : 'bg-emerald-600';
+    return e.p.paid_date ? 'bg-slate-300' : e.p.due_date < todayStr() ? 'bg-rose-600' : 'bg-amber-500';
+  }
+  function renderCalendar() {
+    const { y, m } = state.cal, agenda = buildAgenda(), wd = weddingDay(), today = todayStr();
+    $('cal-title').textContent = new Date(y, m, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    const offset = (new Date(y, m, 1).getDay() + 6) % 7, dim = new Date(y, m + 1, 0).getDate();
+    let html = '<div></div>'.repeat(offset);
+    for (let d = 1; d <= dim; d++) {
+      const ds = `${y}-${pad(m + 1)}-${pad(d)}`, ev = agenda[ds] || [];
+      const sel = ds === state.calSel;
+      const cls = sel ? 'border-emerald-600 bg-emerald-50' : ds === today ? 'border-emerald-300 bg-white' : 'border-transparent bg-white';
+      const dots = ds === wd
+        ? '<span class="text-[10px] font-semibold text-emerald-700 leading-none">Hari H</span>'
+        : ev.slice(0, 3).map((e) => `<span class="w-1.5 h-1.5 ${e.type === 'task' ? 'rounded-full' : 'rounded-sm'} ${dotColor(e)}"></span>`).join('') + (ev.length > 3 ? '<span class="text-[10px] leading-none text-slate-500">+</span>' : '');
+      html += `<button data-day="${ds}" aria-pressed="${sel}" aria-label="${d} ${$('cal-title').textContent}, ${ev.length} agenda" class="h-12 rounded-lg border flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${cls} ${ds === wd ? 'ring-2 ring-emerald-600' : ''}">
+        <span class="text-sm ${ds === today ? 'font-bold text-emerald-700' : 'text-slate-800'}">${d}</span>
+        <span class="flex items-center gap-0.5 h-2">${dots}</span></button>`;
+    }
+    $('cal-grid').innerHTML = html;
+    renderDay(agenda, wd);
+  }
+  function renderDay(agenda, wd) {
+    const sel = state.calSel, ev = agenda[sel] || [];
+    const title = parseDate(sel).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    let html = `<h3 class="font-semibold text-slate-800">${title}</h3>`;
+    if (sel === wd) html += '<div class="rounded-xl bg-emerald-600 text-white p-4 font-medium">Hari H pernikahan</div>';
+    const tasks = ev.filter((e) => e.type === 'task'), pays = ev.filter((e) => e.type === 'pay');
+    html += tasks.map(({ t }) => `<button data-ctask="${t.id}" class="text-left min-h-[44px] rounded-xl bg-white border p-3 ${isOverdue(t) ? 'border-rose-300' : 'border-slate-200'}">
+        <div class="text-sm text-slate-500">Tugas &nbsp;|&nbsp; ${esc(t.category)}</div>
+        <div class="font-medium ${t.is_completed ? 'line-through text-slate-400' : ''}">${esc(t.title)}</div>
+        <div class="text-sm">${t.is_completed ? '<span class="text-emerald-700">Selesai</span>' : isOverdue(t) ? '<span class="text-rose-600 font-medium">Overdue</span>' : '<span class="text-slate-500">Pending</span>'}</div></button>`).join('');
+    html += pays.map(({ p }) => `<button data-cpay="${p.id}" class="text-left min-h-[44px] rounded-xl bg-white border p-3 ${payStatus(p) === 'overdue' ? 'border-rose-300' : 'border-slate-200'}">
+        <div class="text-sm text-slate-500">Pembayaran &nbsp;|&nbsp; ${esc(vendorName(p.vendor_id))}</div>
+        <div class="font-medium tabular-nums">${esc(p.label)}: ${rp(p.amount)}</div>
+        <div class="text-sm">${payBadge(p)}</div></button>`).join('');
+    if (!ev.length && sel !== wd) html += '<div class="rounded-xl border border-dashed border-slate-300 p-4 text-center text-slate-500">Tidak ada agenda di tanggal ini. Ketuk + untuk menambah tugas.</div>';
+    $('cal-day').innerHTML = html;
+  }
+  $('cal-grid').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-day]'); if (!b) return;
+    state.calSel = b.dataset.day; renderCalendar();
+  });
+  $('cal-day').addEventListener('click', (e) => {
+    const t = e.target.closest('[data-ctask]');
+    if (t) return openTask(state.tasks.find((x) => x.id === t.dataset.ctask));
+    const p = e.target.closest('[data-cpay]');
+    if (p) openPayment(state.payments.find((x) => x.id === p.dataset.cpay));
+  });
+  const shiftMonth = (n) => { const d = new Date(state.cal.y, state.cal.m + n, 1); state.cal = { y: d.getFullYear(), m: d.getMonth() }; renderCalendar(); };
+  $('cal-prev').addEventListener('click', () => shiftMonth(-1));
+  $('cal-next').addEventListener('click', () => shiftMonth(1));
+  $('cal-today').addEventListener('click', () => { const n = new Date(); state.cal = { y: n.getFullYear(), m: n.getMonth() }; state.calSel = todayStr(); renderCalendar(); });
 
   /* ---------- PWA ---------- */
   if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

@@ -31,7 +31,7 @@ jobs:
           if ls supabase/migrations/*.sql >/dev/null 2>&1; then
             [ -f supabase/config.toml ] || supabase init
             supabase link --project-ref "$PROJECT_ID"
-            supabase db push --yes
+            supabase db push --remote --yes
           fi
 
   deploy:
