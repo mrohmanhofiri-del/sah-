@@ -1,6 +1,6 @@
 # Simple Wedding Planner PWA
 
-HTML + Vanilla JS + Tailwind (CDN) + Supabase, deploy otomatis lewat GitHub Pages & Actions.
+HTML + Vanilla JS + Tailwind (dibangun saat deploy) + Supabase, deploy otomatis lewat GitHub Pages & Actions.
 
 ## Setup satu kali (±5 menit)
 
@@ -54,3 +54,38 @@ Aplikasi memakai Anonymous Auth dengan satu set data bersama (sesuai skema PRD, 
   - Jika hari H kurang dari 12 bulan lagi, tugas yang tenggatnya sudah lewat bisa dijadwalkan ke hari ini atau dilewati.
   - Isi template ada di konstanta `TEMPLATE` di `index.html` dan mudah diubah.
 - Kategori tugas bertambah: Dokumentasi, Hiburan, Lainnya.
+
+## Pembaruan: data lebih aman, informatif, dan mudah dipakai
+
+**Migrasi baru** (otomatis lewat workflow deploy, atau `supabase db push`):
+- `20261111000000_task_details.sql`: kolom `notes`, `priority`, `assignee` pada tugas.
+- `20261112000000_receipts.sql`: kolom `receipt_path`, bucket Storage privat `receipts` (maks. 5 MB per foto) beserta kebijakan aksesnya.
+
+**Ketahanan data**
+- *Snapshot offline*: setiap data berhasil dimuat, salinannya disimpan di perangkat. Bila koneksi gagal, data terakhir tampil dengan banner status, dan perubahan ditolak dengan pesan jelas. Tanpa snapshot, muncul pesan "Data belum bisa dimuat", bukan layar kosong.
+- *Cadangan*: Pengaturan > Ekspor/Impor cadangan (JSON). Impor hanya menerima cadangan milik acara yang sama dan otomatis dikembalikan bila gagal di tengah jalan. Foto bukti tidak ikut dalam JSON, hanya rujukannya.
+- *Zona berbahaya*: "Hapus semua data" dan "Isi data contoh" disembunyikan di bagian Lanjutan dan baru aktif setelah mengetik `HAPUS`.
+- *Urungkan*: menghapus tugas, item budget, vendor, atau pembayaran memunculkan tombol "Urungkan" selama 8 detik. Berkas foto baru dihapus dari Storage setelah masa urungkan habis.
+
+**Informasi keuangan**
+- Tab Budget: kartu *Proyeksi total biaya* (kontrak vendor + item budget dibanding plafon) dan *Arus kas bulanan* (pembayaran vendor yang harus keluar per bulan, bisa dibuka per bulan).
+- Peringatan bila pembayaran vendor belum dijadwalkan penuh atau melebihi kontrak. Selisih belum terjadwal ikut dihitung pada "Sisa setelah semua tagihan".
+
+**Kemudahan pakai**
+- Tugas: catatan, prioritas, penanggung jawab (Mempelai, Orang tua, Keluarga, WO), pencarian, filter, dan pengelompokan per periode (Terlambat, Minggu ini, per bulan). Grup yang seluruhnya selesai terlipat otomatis.
+- Vendor: tombol *Kirim WhatsApp* dengan template pengingat pembayaran, konfirmasi jadwal, dan konfirmasi sudah dibayar (pesan bisa diedit; nomor `08xx` otomatis menjadi `62xx`).
+- Kalender: *Ekspor .ics* berisi hari H, tugas belum selesai, dan tagihan belum dibayar, lengkap dengan pengingat. UID stabil sehingga impor ulang memperbarui agenda, tidak menggandakan.
+- Pembayaran vendor: *foto bukti bayar* (dikompres di perangkat ke sisi terpanjang 1600 px, JPEG), disimpan privat dan dibuka lewat tautan bertanda tangan berlaku 1 jam.
+
+## Build, aset lokal, dan kenyamanan tambahan
+
+**Tanpa CDN saat berjalan.** Tailwind tidak lagi dimuat dari `cdn.tailwindcss.com` (yang meng-compile CSS di browser dan tidak untuk produksi), dan supabase-js tidak lagi dari jsDelivr `@2`.
+- `styles.css` dibangun oleh Tailwind CLI **3.4.17** (terkunci di `package-lock.json`) dari kelas yang ada di `index.html`. Workflow deploy menjalankan `npm ci` lalu `npm run build:css` otomatis. Berkas hasil build ikut disertakan di repo agar bisa dibuka lokal tanpa langkah tambahan.
+- Setiap kali menambah kelas Tailwind baru di `index.html`, jalankan `npm install` (sekali) lalu `npm run build:css` untuk melihatnya lokal. Jangan menyusun nama kelas dari potongan string (misalnya `'bg-' + warna`) karena tidak akan terdeteksi saat build.
+- `vendor/supabase.js` adalah supabase-js **2.118.0** (build UMD resmi, dirilis 15 Okt 2026). Untuk memperbarui: `npm pack @supabase/supabase-js@<versi>` lalu salin `package/dist/umd/supabase.js` ke `vendor/supabase.js`. Pilih versi yang sudah beberapa minggu dirilis.
+- Service worker kini menyimpan semua aset sendiri, jadi aplikasi tampil utuh walau pembukaan pertama di sinyal buruk. `styles.css` diambil network-first agar CSS tidak ketinggalan dari HTML setelah deploy. **Naikkan `CACHE` di `sw.js` setiap rilis** (sekarang `v7`).
+
+**Kenyamanan**
+- Aplikasi langsung membuka acara yang terakhir dipakai. Ikon ganti mempelai di header tetap membuka pemilih acara.
+- Header satu baris: chip `H-123` di samping nama acara. Ketuk untuk membuka rincian bulan/hari/jam/menit; pilihannya diingat.
+- Tanggal hari H bawaan migrasi (sekarang + 6 bulan) dikenali dari detiknya yang tidak bulat, karena tanggal yang disimpan lewat Pengaturan selalu bulat ke menit. Selama masih sementara: chip menjadi kuning "Atur hari H", Beranda menampilkan kartu peringatan, dan tombol *Tambahkan* pada template checklist dinonaktifkan sampai tanggal sebenarnya disimpan.

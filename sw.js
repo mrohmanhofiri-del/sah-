@@ -1,6 +1,5 @@
-const CACHE = 'wedding-planner-v5';
-const SHELL = ['./', './index.html', './config.js', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png',
-  'https://cdn.tailwindcss.com', 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'];
+const CACHE = 'wedding-planner-v7';
+const SHELL = ['./', './index.html', './config.js', './styles.css', './vendor/supabase.js', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => Promise.all(SHELL.map((u) => c.add(u).catch(() => {})))));
@@ -18,7 +17,7 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET' || !req.url.startsWith('http')) return;
   if (new URL(req.url).hostname.endsWith('supabase.co')) return;
   const u = new URL(req.url);
-  const fresh = req.mode === 'navigate' || (u.origin === location.origin && /\/(index\.html|config\.js)?$/.test(u.pathname));
+  const fresh = req.mode === 'navigate' || (u.origin === location.origin && /\/(index\.html|config\.js|styles\.css)?$/.test(u.pathname));
   if (fresh) {
     e.respondWith(fetch(req).then((res) => { const c = res.clone(); caches.open(CACHE).then((x) => x.put(req, c)); return res; })
       .catch(() => caches.match(req).then((m) => m || caches.match('./index.html'))));
