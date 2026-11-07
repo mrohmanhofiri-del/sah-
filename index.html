@@ -29,10 +29,13 @@
 <header class="sticky top-0 z-30 bg-white shadow-sm" style="padding-top:env(safe-area-inset-top)">
   <div class="max-w-md mx-auto px-4 py-3">
     <div class="flex items-center justify-between">
-      <h1 class="text-lg font-semibold text-slate-800">Wedding Planner</h1>
-      <button id="btn-settings" aria-label="Pengaturan hari H dan budget" class="w-11 h-11 -mr-2 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 transition-colors duration-150">
+      <div class="min-w-0"><h1 class="text-lg font-semibold text-slate-800 leading-tight">Wedding Planner</h1><p class="text-sm text-slate-500">Pernikahan <span id="profile-name" class="font-medium text-slate-700"></span></p></div>
+      <div class="flex items-center -mr-2">
+      <button id="btn-switch" aria-label="Ganti mempelai" class="w-11 h-11 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 transition-colors duration-150"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h11l-3-3M17 17H6l3 3"/></svg></button>
+      <button id="btn-settings" aria-label="Pengaturan hari H dan budget" class="w-11 h-11 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 transition-colors duration-150">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.3 4.3a1.7 1.7 0 013.4 0 1.7 1.7 0 002.5 1l.1-.1a1.7 1.7 0 012.4 2.4l-.1.1a1.7 1.7 0 001 2.5 1.7 1.7 0 010 3.4 1.7 1.7 0 00-1 2.5l.1.1a1.7 1.7 0 01-2.4 2.4l-.1-.1a1.7 1.7 0 00-2.5 1 1.7 1.7 0 01-3.4 0 1.7 1.7 0 00-2.5-1l-.1.1a1.7 1.7 0 01-2.4-2.4l.1-.1a1.7 1.7 0 00-1-2.5 1.7 1.7 0 010-3.4 1.7 1.7 0 001-2.5l-.1-.1a1.7 1.7 0 012.4-2.4l.1.1a1.7 1.7 0 002.5-1z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
+      </div>
     </div>
     <div id="countdown" class="mt-1 grid grid-cols-4 gap-2 text-center" aria-live="off">
       <div class="skeleton skeleton-pulse h-14"></div><div class="skeleton skeleton-pulse h-14"></div>
@@ -202,7 +205,7 @@
     </div>
     <div class="border-t border-slate-200 pt-4">
       <h3 class="text-sm font-medium text-slate-700">Mode demo</h3>
-      <p class="text-sm text-slate-500 mt-1">Hapus seluruh tugas, budget, vendor, dan pembayaran, atau ganti dengan data contoh.</p>
+      <p class="text-sm text-slate-500 mt-1">Berlaku untuk acara yang sedang dibuka saja. Data mempelai lain tidak terpengaruh.</p>
       <div class="grid grid-cols-2 gap-2 mt-3">
         <button type="button" id="btn-seed" class="min-h-[44px] rounded-lg border border-emerald-600 text-emerald-700 font-medium hover:bg-emerald-50 transition-colors duration-150">Isi data contoh</button>
         <button type="button" id="btn-reset" class="min-h-[44px] rounded-lg border border-rose-600 text-rose-600 font-medium hover:bg-rose-50 transition-colors duration-150">Hapus semua data</button>
@@ -285,12 +288,25 @@
   </form>
 </dialog>
 
+<!-- PILIH MEMPELAI -->
+<div id="picker" role="dialog" aria-modal="true" aria-labelledby="picker-title" class="fixed inset-0 z-[60] bg-slate-50 overflow-y-auto" style="padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)">
+  <div class="min-h-full max-w-md mx-auto px-6 py-10 flex flex-col justify-center gap-6">
+    <div>
+      <h2 id="picker-title" class="text-2xl font-semibold text-slate-800">Wedding Planner</h2>
+      <p class="text-slate-500 mt-1">Pilih acara pernikahan yang ingin dibuka.</p>
+    </div>
+    <div id="picker-list" class="flex flex-col gap-4"></div>
+    <p class="text-sm text-slate-500">Data tiap acara tersimpan terpisah. Anda bisa berpindah kapan saja lewat ikon di pojok kanan atas.</p>
+  </div>
+</div>
+
 <div id="toast" class="hidden fixed top-24 inset-x-4 z-50 max-w-md mx-auto rounded-lg bg-slate-800 text-white text-sm px-4 py-3 shadow-lg"></div>
 
 <script>
 (() => {
   'use strict';
   const CATEGORIES = ['KUA', 'Venue', 'Katering', 'Pakaian', 'Undangan', 'Dekorasi'];
+  const PROFILES = { ade: { name: 'Ade', id: 1 }, rohman: { name: 'Rohman', id: 2 } };
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const rp = (n) => 'Rp ' + new Intl.NumberFormat('id-ID').format(Number(n) || 0);
@@ -303,7 +319,7 @@
   const state = { tasks: [], budgets: [], settings: null, view: 'task',
     fStatus: 'all', fCat: '', fTime: '', loadingTasks: true, loadingBudget: true,
     editTask: null, editBudget: null,
-    vendors: [], payments: [], loadingVendor: true, editVendor: null, editPay: null, payVendor: null,
+    vendors: [], payments: [], loadingVendor: true, profile: null, authed: false, authFailed: false, settingsLoaded: false, editVendor: null, editPay: null, payVendor: null,
     cal: { y: new Date().getFullYear(), m: new Date().getMonth() }, calSel: todayStr() };
 
   /* ---------- Supabase ---------- */
@@ -320,15 +336,16 @@
 
   async function init() {
     renderChips(); fillSelects(); setView('task'); renderTasks(); renderBudget(); renderVendors();
-    if (!sb) { banner('Aplikasi belum terhubung ke Supabase. Isi <code>SUPABASE_URL</code> dan <code>SUPABASE_ANON_KEY</code> (lihat README).'); state.loadingTasks = state.loadingBudget = state.loadingVendor = false; renderVendors(); renderTasks(); renderBudget(); renderCountdown(); return; }
+    showPicker();
+    if (!sb) { banner('Aplikasi belum terhubung ke Supabase. Isi <code>SUPABASE_URL</code> dan <code>SUPABASE_ANON_KEY</code> (lihat README).'); return; }
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { const { error } = await sb.auth.signInAnonymously(); if (error) throw error; }
     } catch (e) {
       banner('Gagal masuk. Aktifkan <b>Anonymous sign-ins</b> di Supabase: Authentication → Sign In / Providers.');
-      state.loadingTasks = state.loadingBudget = state.loadingVendor = false; renderVendors(); renderTasks(); renderBudget(); return;
+      state.authFailed = true;
+      state.loadingTasks = state.loadingBudget = state.loadingVendor = false; renderAll(); return;
     }
-    await refreshAll(); state.ready = true;
     sb.channel('wp-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, loadTasks)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, loadSettings)
@@ -336,21 +353,32 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, loadVendors)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vendor_payments' }, loadPayments)
       .subscribe();
+    state.authed = true;
+    if (state.profile) { await refreshAll(); state.ready = true; }
   }
 
+  // Setiap pemuat hanya mengambil data milik mempelai aktif, dan membuang hasil
+  // yang datang terlambat bila pengguna sudah berpindah mempelai.
   async function loadSettings() {
-    const { data, error } = await sb.from('settings').select('*').eq('id', 1).maybeSingle();
-    if (error) { toast('Gagal memuat pengaturan.'); return; }
-    state.settings = data; renderAll();
+    const prof = state.profile; if (!prof) return;
+    const { data, error } = await sb.from('settings').select('*').eq('profile', prof).maybeSingle();
+    if (prof !== state.profile) return;
+    state.settingsLoaded = true;
+    if (error) toast('Gagal memuat pengaturan.'); else state.settings = data;
+    renderAll();
   }
   async function loadTasks() {
-    const { data, error } = await sb.from('tasks').select('*').order('due_date', { ascending: true });
+    const prof = state.profile; if (!prof) return;
+    const { data, error } = await sb.from('tasks').select('*').eq('profile', prof).order('due_date', { ascending: true });
+    if (prof !== state.profile) return;
     state.loadingTasks = false;
     if (error) toast('Gagal memuat tugas. Periksa koneksi.'); else state.tasks = data;
     renderAll();
   }
   async function loadBudgets() {
-    const { data, error } = await sb.from('budgets').select('*').order('item_name', { ascending: true });
+    const prof = state.profile; if (!prof) return;
+    const { data, error } = await sb.from('budgets').select('*').eq('profile', prof).order('item_name', { ascending: true });
+    if (prof !== state.profile) return;
     state.loadingBudget = false;
     if (error) toast('Gagal memuat budget. Periksa koneksi.'); else state.budgets = data;
     renderAll();
@@ -371,7 +399,7 @@
   }
   function renderCountdown() {
     const el = $('countdown');
-    if (!state.settings) { if (!sb) el.innerHTML = '<p class="col-span-4 text-sm text-slate-500 py-3">Hari H belum diatur.</p>'; return; }
+    if (!state.settings) { if (!sb || state.authFailed || state.settingsLoaded) el.innerHTML = '<p class="col-span-4 text-sm text-slate-500 py-3">Hari H belum diatur. Atur lewat ikon pengaturan.</p>'; return; }
     const p = countdownParts(new Date(state.settings.wedding_date));
     if (!p) { el.className = 'mt-1'; el.innerHTML = '<p class="text-emerald-700 font-medium py-2">Hari H sudah tiba. Selamat menempuh hidup baru!</p>'; return; }
     el.className = 'mt-1 grid grid-cols-4 gap-2 text-center';
@@ -483,7 +511,7 @@
   }
   $('form-task').addEventListener('submit', async (e) => {
     e.preventDefault(); if (!guard()) return;
-    const row = { title: $('t-title').value.trim(), category: $('t-cat').value, due_date: $('t-due').value, is_completed: $('t-done').checked };
+    const row = { title: $('t-title').value.trim(), category: $('t-cat').value, due_date: $('t-due').value, is_completed: $('t-done').checked, profile: state.profile };
     if (!row.title) return;
     const q = state.editTask ? sb.from('tasks').update(row).eq('id', state.editTask.id) : sb.from('tasks').insert(row);
     const { error } = await q;
@@ -564,7 +592,7 @@
   }
   $('form-budget').addEventListener('submit', async (e) => {
     e.preventDefault(); if (!guard()) return;
-    const row = { item_name: $('b-name').value.trim(), est_cost: num($('b-est').value), actual_cost: num($('b-act').value) };
+    const row = { item_name: $('b-name').value.trim(), est_cost: num($('b-est').value), actual_cost: num($('b-act').value), profile: state.profile };
     if (!row.item_name) return;
     const q = state.editBudget ? sb.from('budgets').update(row).eq('id', state.editBudget.id) : sb.from('budgets').insert(row);
     const { error } = await q;
@@ -588,7 +616,7 @@
   });
   $('form-settings').addEventListener('submit', async (e) => {
     e.preventDefault(); if (!guard()) return;
-    const row = { id: 1, wedding_date: new Date($('s-date').value).toISOString(), master_budget: num($('s-budget').value) };
+    const row = { id: PROFILES[state.profile].id, profile: state.profile, wedding_date: new Date($('s-date').value).toISOString(), master_budget: num($('s-budget').value) };
     const { error } = await sb.from('settings').upsert(row);
     if (error) return toast('Gagal menyimpan pengaturan.');
     state.settings = row; $('dlg-settings').close(); renderAll();
@@ -624,13 +652,17 @@
   }
 
   async function loadVendors() {
-    const { data, error } = await sb.from('vendors').select('*').order('name', { ascending: true });
+    const prof = state.profile; if (!prof) return;
+    const { data, error } = await sb.from('vendors').select('*').eq('profile', prof).order('name', { ascending: true });
+    if (prof !== state.profile) return;
     state.loadingVendor = false;
     if (error) toast('Gagal memuat vendor. Pastikan migrasi database sudah berjalan.'); else state.vendors = data;
     renderAll();
   }
   async function loadPayments() {
-    const { data, error } = await sb.from('vendor_payments').select('*').order('due_date', { ascending: true });
+    const prof = state.profile; if (!prof) return;
+    const { data, error } = await sb.from('vendor_payments').select('*').eq('profile', prof).order('due_date', { ascending: true });
+    if (prof !== state.profile) return;
     if (error) toast('Gagal memuat pembayaran vendor.'); else state.payments = data;
     renderAll();
   }
@@ -725,7 +757,7 @@
   }
   $('form-vendor').addEventListener('submit', async (e) => {
     e.preventDefault(); if (!guard()) return;
-    const row = { name: $('v-name').value.trim(), category: $('v-cat').value, phone: $('v-phone').value.trim(), total_cost: num($('v-total').value), notes: $('v-notes').value.trim() };
+    const row = { name: $('v-name').value.trim(), category: $('v-cat').value, phone: $('v-phone').value.trim(), total_cost: num($('v-total').value), notes: $('v-notes').value.trim(), profile: state.profile };
     if (!row.name) return;
     const q = state.editVendor ? sb.from('vendors').update(row).eq('id', state.editVendor.id) : sb.from('vendors').insert(row);
     const { error } = await q;
@@ -760,7 +792,7 @@
   $('form-payment').addEventListener('submit', async (e) => {
     e.preventDefault(); if (!guard()) return;
     const paid = $('p-paid').checked;
-    const row = { vendor_id: state.payVendor, label: $('p-label').value, amount: num($('p-amount').value), due_date: $('p-due').value, paid_date: paid ? ($('p-paiddate').value || todayStr()) : null };
+    const row = { vendor_id: state.payVendor, label: $('p-label').value, amount: num($('p-amount').value), due_date: $('p-due').value, paid_date: paid ? ($('p-paiddate').value || todayStr()) : null, profile: state.profile };
     const q = state.editPay ? sb.from('vendor_payments').update(row).eq('id', state.editPay.id) : sb.from('vendor_payments').insert(row);
     const { error } = await q;
     if (error) return toast('Gagal menyimpan pembayaran.');
@@ -862,16 +894,18 @@
 
   async function wipeAll() {
     for (const tbl of ['vendors', 'tasks', 'budgets']) { // pembayaran ikut terhapus (cascade)
-      const { error } = await sb.from(tbl).delete().neq('id', NIL_ID);
+      const { error } = await sb.from(tbl).delete().eq('profile', state.profile);
       if (error) throw error;
     }
   }
   async function seedDemo() {
     const wd = new Date(); wd.setDate(wd.getDate() + 120); wd.setHours(10, 0, 0, 0);
-    let r = await sb.from('settings').upsert({ id: 1, wedding_date: wd.toISOString(), master_budget: 150000000 });
+    const pf = state.profile;
+    const ins = (tbl, rows, sel) => { const q = sb.from(tbl).insert(rows.map((x) => ({ ...x, profile: pf }))); return sel ? q.select() : q; };
+    let r = await sb.from('settings').upsert({ id: PROFILES[pf].id, profile: pf, wedding_date: wd.toISOString(), master_budget: 150000000 });
     if (r.error) throw r.error;
     const T = (title, category, d, done = false) => ({ title, category, due_date: addDays(d), is_completed: done });
-    r = await sb.from('tasks').insert([
+    r = await ins('tasks', [
       T('Bawa berkas N1-N4 ke Kelurahan', 'KUA', -3),
       T('Daftar nikah di KUA', 'KUA', 10),
       T('DP gedung serbaguna', 'Venue', -20, true),
@@ -883,7 +917,7 @@
       T('Finalisasi konsep pelaminan', 'Dekorasi', 60)
     ]);
     if (r.error) throw r.error;
-    r = await sb.from('budgets').insert([
+    r = await ins('budgets', [
       { item_name: 'Cincin kawin', est_cost: 3000000, actual_cost: 3000000 },
       { item_name: 'Mahar', est_cost: 5000000, actual_cost: 5000000 },
       { item_name: 'Seserahan', est_cost: 4000000, actual_cost: 1500000 },
@@ -896,11 +930,11 @@
       { name: 'Dekorasi Bunga Indah', category: 'Dekorasi', phone: '081234567803', total_cost: 15000000, notes: '' },
       { name: 'MUA Ayu', category: 'MUA', phone: '081234567804', total_cost: 6000000, notes: 'Akad dan resepsi' }
     ];
-    r = await sb.from('vendors').insert(vend).select();
+    r = await ins('vendors', vend, true);
     if (r.error) throw r.error;
     const id = Object.fromEntries(r.data.map((v) => [v.name, v.id]));
     const P = (v, label, amount, due, paid) => ({ vendor_id: id[v], label, amount, due_date: addDays(due), paid_date: paid === undefined ? null : addDays(paid) });
-    r = await sb.from('vendor_payments').insert([
+    r = await ins('vendor_payments', [
       P('Gedung Serbaguna Mawar', 'DP', 10000000, -20, -20),
       P('Gedung Serbaguna Mawar', 'Pelunasan', 15000000, 30),
       P('Katering Sedap Rasa', 'DP', 12000000, -2),
@@ -923,11 +957,11 @@
     toast(ok ? okMsg : 'Gagal mengubah data. Periksa koneksi lalu coba lagi.');
   }
   $('btn-reset').addEventListener('click', () => {
-    if (!guard() || !confirm('Hapus SEMUA tugas, budget, vendor, dan pembayaran? Tindakan ini tidak bisa dibatalkan.')) return;
+    if (!guard() || !confirm(`Hapus SEMUA tugas, budget, vendor, dan pembayaran milik ${PROFILES[state.profile].name}? Tindakan ini tidak bisa dibatalkan.`)) return;
     runDemo(wipeAll, 'Semua data dihapus.');
   });
   $('btn-seed').addEventListener('click', () => {
-    if (!guard() || !confirm('Ganti semua data saat ini dengan data contoh?')) return;
+    if (!guard() || !confirm(`Ganti semua data ${PROFILES[state.profile].name} saat ini dengan data contoh?`)) return;
     runDemo(async () => { await wipeAll(); await seedDemo(); }, 'Data contoh dimuat.');
   });
 

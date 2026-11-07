@@ -39,3 +39,10 @@ Aplikasi memakai Anonymous Auth dengan satu set data bersama (sesuai skema PRD, 
 - Ikon pengaturan → **Isi data contoh** / **Hapus semua data**.
 - Semua menu memakai satu sumber data: tanda selesai tugas, pembayaran vendor, dan budget langsung memperbarui kalender, tab vendor, dan saldo budget. Data dimuat ulang otomatis saat aplikasi dibuka kembali, saat online, dan lewat realtime antar perangkat.
 - Pembayaran vendor yang sudah dibayar otomatis dihitung di "Total terpakai" tab Budget. Jangan mencatatnya lagi sebagai item budget.
+
+## Dua acara: Ade dan Rohman
+- Saat aplikasi dibuka muncul pilihan **Ade** atau **Rohman**. Ikon panah di header untuk berpindah kapan saja.
+- Menu sama, data terpisah: tugas, budget, vendor, pembayaran, hari H, dan plafon masing-masing punya kolom `profile`.
+- Data yang sudah ada sebelumnya otomatis menjadi milik **Ade** (migrasi `20261110000000_profiles.sql`).
+- Mode demo hanya memengaruhi acara yang sedang dibuka.
+- Pemisahan ini di level aplikasi: siapa pun yang memegang URL dan anon key tetap bisa membaca keduanya lewat API.
