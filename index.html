@@ -20,6 +20,7 @@
   .skeleton-pulse { animation: sk 1.2s ease-in-out infinite; }
   @keyframes sk { 50% { opacity:.5; } }
   @media (prefers-reduced-motion: reduce) { .skeleton-pulse { animation:none; } }
+  #toast[popover] { width:auto; height:auto; bottom:auto; border:0; overflow:visible; }
   button:focus-visible, select:focus-visible, input:focus-visible { outline:2px solid #059669; outline-offset:2px; }
 </style>
 </head>
@@ -432,7 +433,7 @@
   </div>
 </div>
 
-<div id="toast" class="hidden fixed top-24 inset-x-4 z-50 max-w-md mx-auto rounded-lg bg-slate-800 text-white text-sm px-4 py-3 shadow-lg"></div>
+<div id="toast" popover="manual" role="status" class="hidden fixed top-24 inset-x-4 z-50 max-w-md mx-auto rounded-lg bg-slate-800 text-white text-sm px-4 py-3 shadow-lg"></div>
 
 <script>
 (() => {
@@ -464,6 +465,10 @@
   if (configured && window.supabase) sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
 
   function finalizeToast() { const a = toast._act; toast._act = null; if (a && a.onExpire) a.onExpire(); }
+  function hideToast() {
+    const t = $('toast'); t.classList.add('hidden');
+    if (t.hidePopover) { try { t.hidePopover(); } catch (e) { /* abaikan */ } }
+  }
   function toast(msg, act) {
     finalizeToast();
     const t = $('toast'); t.textContent = '';
@@ -471,12 +476,14 @@
     if (act) {
       const b = document.createElement('button'); b.type = 'button'; b.dataset.undo = '1'; b.textContent = act.label;
       b.className = 'ml-3 min-h-[44px] px-2 font-semibold text-emerald-300 underline';
-      b.addEventListener('click', () => { const a = toast._act; toast._act = null; clearTimeout(toast._t); t.classList.add('hidden'); if (a) a.fn(); });
+      b.addEventListener('click', () => { const a = toast._act; toast._act = null; clearTimeout(toast._t); hideToast(); if (a) a.fn(); });
       t.append(b);
     }
     toast._act = act || null;
     t.classList.remove('hidden');
-    clearTimeout(toast._t); toast._t = setTimeout(() => { finalizeToast(); t.classList.add('hidden'); }, act ? 8000 : 3500);
+    // Popover = top layer, supaya pesan tetap terlihat di atas <dialog> modal yang masih terbuka.
+    if (t.showPopover) { try { if (!t.matches(':popover-open')) t.showPopover(); } catch (e) { /* abaikan */ } }
+    clearTimeout(toast._t); toast._t = setTimeout(() => { finalizeToast(); hideToast(); }, act ? 8000 : 3500);
   }
   function banner(html) { const b = $('banner'); b.innerHTML = `<div class="rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-sm p-3">${html}</div>`; b.classList.remove('hidden'); }
 
