@@ -46,3 +46,11 @@ Aplikasi memakai Anonymous Auth dengan satu set data bersama (sesuai skema PRD, 
 - Data yang sudah ada sebelumnya otomatis menjadi milik **Ade** (migrasi `20261110000000_profiles.sql`).
 - Mode demo hanya memengaruhi acara yang sedang dibuka.
 - Pemisahan ini di level aplikasi: siapa pun yang memegang URL dan anon key tetap bisa membaca keduanya lewat API.
+
+## Beranda & template checklist
+- **Beranda** (tab pertama, tampil otomatis saat acara dibuka): tugas terlambat dan jatuh tempo hari ini, tagihan vendor yang terlambat atau jatuh tempo 7 hari ke depan, persentase tugas selesai, dan sisa saldo. Tugas dan tagihan bisa langsung dicentang dari sini. Semua angka dihitung dari data yang sama dengan tab lain, tanpa migrasi database baru.
+- **Template checklist**: tombol "Isi dari template checklist" di tab Tasklist (atau dari beranda saat belum ada tugas). Menambahkan 47 tugas standar dari H-12 bulan sampai H-1, tenggat dihitung dari tanggal hari H di Pengaturan. Pratinjau ditampilkan sebelum disimpan.
+  - Tugas yang namanya sudah ada dilewati, jadi aman ditekan berulang.
+  - Jika hari H kurang dari 12 bulan lagi, tugas yang tenggatnya sudah lewat bisa dijadwalkan ke hari ini atau dilewati.
+  - Isi template ada di konstanta `TEMPLATE` di `index.html` dan mudah diubah.
+- Kategori tugas bertambah: Dokumentasi, Hiburan, Lainnya.
