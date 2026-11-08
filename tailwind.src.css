@@ -99,3 +99,13 @@ html.dark .has-\[\:focus-visible\]\:ring-emerald-600:has(:focus-visible) { --tw-
 .theme-sun { display: none; }
 html.dark .theme-sun { display: block; }
 html.dark .theme-moon { display: none; }
+
+/* ===== Layar masuk & pilih acara ===== */
+.auth-screen { background: radial-gradient(60rem 28rem at 50% -8rem, rgb(15 107 87 / .13), transparent 70%), #f8fafc; }
+.auth-card { box-shadow: 0 1px 2px rgb(16 24 40 / .04), 0 16px 36px -12px rgb(16 24 40 / .14); }
+html.dark .auth-screen { background: radial-gradient(60rem 28rem at 50% -8rem, rgb(47 154 130 / .16), transparent 70%), #0c1117; }
+html.dark .auth-card { box-shadow: 0 16px 36px -12px rgb(0 0 0 / .6); }
+#l-pass-toggle .eye-off { display: none; }
+#l-pass-toggle[aria-pressed=true] .eye-on { display: none; }
+#l-pass-toggle[aria-pressed=true] .eye-off { display: block; }
+#login-err:empty { margin-top: -1.25rem; } /* wilayah peringatan kosong tidak menambah jarak */
