@@ -1,6 +1,8 @@
 /** Hanya index.html yang memakai kelas Tailwind (termasuk di dalam string JS). */
 module.exports = {
   content: ['./index.html'],
+  // Efek hover hanya di perangkat yang punya kursor; di layar sentuh tidak "menempel" setelah diketuk.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       colors: {
