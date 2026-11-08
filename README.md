@@ -98,4 +98,11 @@ Selama pendaftaran publik dimatikan, hanya akun buatan Anda yang bisa masuk. Jik
 - **Item budget** kini punya kategori, status *Sudah dibayar* dan tanggal bayar. "Total terpakai" hanya menghitung item yang sudah dibayar (biaya aktual) ditambah pembayaran vendor yang lunas. Item belum dibayar masuk ke "Sisa setelah semua tagihan". Data lama dengan biaya aktual > 0 otomatis ditandai dibayar oleh migrasi.
 - **Budget per kategori**: tombol *Atur alokasi* di tab Budget. Tiap kategori menampilkan komitmen (kontrak vendor + item budget) dibanding alokasi, sisa, jumlah yang sudah dibayar, dan peringatan di 80% dan saat melebihi. Kategori vendor dan item budget memakai daftar yang sama (`BUDGET_CATS` di `index.html`).
 - Cadangan JSON ikut menyertakan kategori, tanggal bayar, dan alokasi (cadangan lama tetap bisa diimpor).
-- Naikkan `CACHE` di `sw.js` setiap rilis (sekarang `v10`).
+- Naikkan `CACHE` di `sw.js` setiap rilis (sekarang `v11`).
+
+## Daftar belanja (seserahan, souvenir, dll.)
+- Tab **Vendor** punya dua tampilan: *Vendor* dan *Daftar belanja*. Di tampilan belanja, tombol + membuat daftar baru (misalnya Seserahan), dan tombol *Tambah item* ada di tiap daftar.
+- Tiap item: nama, jumlah, estimasi total, toko, catatan, dan centang **sudah dibeli** (harga aktual dan tanggal beli terisi otomatis, bisa diubah).
+- Rekap seperti Vendor: item dibeli dari total, total perkiraan, sudah dibeli, sisa, dan bar progres, per daftar maupun keseluruhan.
+- Terhubung ke Budget: item yang dibeli masuk \"Total terpakai\", yang belum dibeli masuk \"Sisa setelah semua tagihan\" dan proyeksi, dan semuanya ikut kategori daftar di \"Budget per kategori\". Jangan mencatat barang yang sama lagi sebagai item budget.
+- Migrasi: `20261114000000_shopping.sql`. Cadangan JSON ikut menyertakan daftar dan item.
