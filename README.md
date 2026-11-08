@@ -52,7 +52,7 @@ Selama pendaftaran publik dimatikan, hanya akun buatan Anda yang bisa masuk. Jik
 - Pemisahan ini di level aplikasi: siapa pun yang memegang URL dan anon key tetap bisa membaca keduanya lewat API.
 
 ## Beranda & template checklist
-- **Beranda** (tab pertama, tampil otomatis saat acara dibuka): tugas terlambat dan jatuh tempo hari ini, tagihan vendor yang terlambat atau jatuh tempo 7 hari ke depan, persentase tugas selesai, dan sisa saldo. Tugas dan tagihan bisa langsung dicentang dari sini. Semua angka dihitung dari data yang sama dengan tab lain, tanpa migrasi database baru.
+- **Beranda** (tab pertama, tampil otomatis saat acara dibuka): hitung mundur hari H, tugas terlambat dan jatuh tempo hari ini, tagihan vendor yang terlambat atau jatuh tempo 7 hari ke depan, persentase tugas selesai, dan sisa saldo. Tugas dan tagihan bisa langsung dicentang dari sini. Semua angka dihitung dari data yang sama dengan tab lain, tanpa migrasi database baru.
 - **Template checklist**: tombol "Isi dari template checklist" di tab Tasklist (atau dari beranda saat belum ada tugas). Menambahkan 47 tugas standar dari H-12 bulan sampai H-1, tenggat dihitung dari tanggal hari H di Pengaturan. Pratinjau ditampilkan sebelum disimpan.
   - Tugas yang namanya sudah ada dilewati, jadi aman ditekan berulang.
   - Jika hari H kurang dari 12 bulan lagi, tugas yang tenggatnya sudah lewat bisa dijadwalkan ke hari ini atau dilewati.
@@ -72,8 +72,8 @@ Selama pendaftaran publik dimatikan, hanya akun buatan Anda yang bisa masuk. Jik
 - *Urungkan*: menghapus tugas, item budget, vendor, atau pembayaran memunculkan tombol "Urungkan" selama 8 detik. Berkas foto baru dihapus dari Storage setelah masa urungkan habis.
 
 **Informasi keuangan**
-- Tab Budget: kartu *Proyeksi total biaya* (kontrak vendor + item budget dibanding plafon) dan *Arus kas bulanan* (pembayaran vendor yang harus keluar per bulan, bisa dibuka per bulan).
-- Peringatan bila pembayaran vendor belum dijadwalkan penuh atau melebihi kontrak. Selisih belum terjadwal ikut dihitung pada "Sisa setelah semua tagihan".
+- Tab Budget: ringkasan sisa saldo (dengan peringatan vendor yang belum terjadwal penuh atau melebihi kontrak) dan *Arus kas bulanan* (pembayaran vendor yang harus keluar per bulan, bisa dibuka per bulan).
+- Selisih yang belum terjadwal ikut dihitung pada "Sisa setelah semua tagihan".
 
 **Kemudahan pakai**
 - Tugas: catatan, prioritas, penanggung jawab (Mempelai, Orang tua, Keluarga, WO), pencarian, filter, dan pengelompokan per periode (Terlambat, Minggu ini, per bulan). Grup yang seluruhnya selesai terlipat otomatis.
@@ -98,7 +98,7 @@ Selama pendaftaran publik dimatikan, hanya akun buatan Anda yang bisa masuk. Jik
 - **Item budget** kini punya kategori, status *Sudah dibayar* dan tanggal bayar. "Total terpakai" hanya menghitung item yang sudah dibayar (biaya aktual) ditambah pembayaran vendor yang lunas. Item belum dibayar masuk ke "Sisa setelah semua tagihan". Data lama dengan biaya aktual > 0 otomatis ditandai dibayar oleh migrasi.
 - **Budget per kategori**: tombol *Atur alokasi* di tab Budget. Tiap kategori menampilkan komitmen (kontrak vendor + item budget) dibanding alokasi, sisa, jumlah yang sudah dibayar, dan peringatan di 80% dan saat melebihi. Kategori vendor dan item budget memakai daftar yang sama (`BUDGET_CATS` di `index.html`).
 - Cadangan JSON ikut menyertakan kategori, tanggal bayar, dan alokasi (cadangan lama tetap bisa diimpor).
-- Naikkan `CACHE` di `sw.js` setiap rilis (sekarang `v11`).
+- Naikkan `CACHE` di `sw.js` setiap rilis (sekarang `v19`).
 
 ## Daftar belanja (seserahan, souvenir, dll.)
 - Tab **Vendor** punya dua tampilan: *Vendor* dan *Daftar belanja*. Di tampilan belanja, tombol + membuat daftar baru (misalnya Seserahan), dan tombol *Tambah item* ada di tiap daftar.
