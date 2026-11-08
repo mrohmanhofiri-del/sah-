@@ -6,7 +6,7 @@ HTML + Vanilla JS + Tailwind (dibangun saat deploy) + Supabase, deploy otomatis 
 
 **1. Supabase**
 - Buat project baru di supabase.com.
-- Authentication → Sign In / Providers → aktifkan **Allow anonymous sign-ins**.
+- Authentication → Sign In / Providers: **matikan** *Allow anonymous sign-ins* dan *Allow new users to sign up* (lihat bagian Login).
 - Catat: Project URL, anon public key (Settings → API), Project ID (Settings → General), Database password, dan buat Access Token di supabase.com/dashboard/account/tokens.
 
 **2. GitHub**
@@ -27,8 +27,12 @@ HTML + Vanilla JS + Tailwind (dibangun saat deploy) + Supabase, deploy otomatis 
 ## Mengubah database
 Tambahkan file `.sql` baru di `supabase/migrations/` (format nama `YYYYMMDDHHMMSS_deskripsi.sql`), commit, push.
 
-## Catatan keamanan
-Aplikasi memakai Anonymous Auth dengan satu set data bersama (sesuai skema PRD, tanpa `user_id`). Siapa pun yang memiliki URL dan anon key dapat masuk anonim dan membaca/mengubah data. Cocok untuk penggunaan pribadi; jika URL disebarkan luas, tambahkan kolom `user_id` atau login email.
+## Login (data hanya untuk akun terdaftar)
+Aplikasi meminta email dan kata sandi. Migrasi `20261113000000_budget_categories_auth.sql` membatasi seluruh tabel dan bucket foto bukti bayar hanya untuk akun email (sesi anonim ditolak oleh database).
+1. Supabase → Authentication → Sign In / Providers: matikan **Allow anonymous sign-ins** dan **Allow new users to sign up**.
+2. Authentication → Users → **Add user** → isi email dan kata sandi, centang *Auto Confirm User*. Buat satu akun per orang yang boleh mengakses (Ade, Rohman, keluarga).
+3. Semua akun berbagi data yang sama; pemisahan Ade/Rohman tetap di level aplikasi. Keluar lewat Pengaturan > Akun (snapshot offline di perangkat ikut dihapus).
+Selama pendaftaran publik dimatikan, hanya akun buatan Anda yang bisa masuk. Jika diaktifkan lagi, siapa pun bisa mendaftar dan membaca data.
 
 ## Fitur tambahan
 - **Vendor**: daftar vendor (kategori, kontak, nilai kontrak, catatan) dengan catatan pembayaran DP / cicilan / pelunasan, tenggat bayar, dan status dibayar.
@@ -89,3 +93,9 @@ Aplikasi memakai Anonymous Auth dengan satu set data bersama (sesuai skema PRD, 
 - Aplikasi langsung membuka acara yang terakhir dipakai. Ikon ganti mempelai di header tetap membuka pemilih acara.
 - Header satu baris: chip `H-123` di samping nama acara. Ketuk untuk membuka rincian bulan/hari/jam/menit; pilihannya diingat.
 - Tanggal hari H bawaan migrasi (sekarang + 6 bulan) dikenali dari detiknya yang tidak bulat, karena tanggal yang disimpan lewat Pengaturan selalu bulat ke menit. Selama masih sementara: chip menjadi kuning "Atur hari H", Beranda menampilkan kartu peringatan, dan tombol *Tambahkan* pada template checklist dinonaktifkan sampai tanggal sebenarnya disimpan.
+
+## Budget per kategori dan status bayar item
+- **Item budget** kini punya kategori, status *Sudah dibayar* dan tanggal bayar. "Total terpakai" hanya menghitung item yang sudah dibayar (biaya aktual) ditambah pembayaran vendor yang lunas. Item belum dibayar masuk ke "Sisa setelah semua tagihan". Data lama dengan biaya aktual > 0 otomatis ditandai dibayar oleh migrasi.
+- **Budget per kategori**: tombol *Atur alokasi* di tab Budget. Tiap kategori menampilkan komitmen (kontrak vendor + item budget) dibanding alokasi, sisa, jumlah yang sudah dibayar, dan peringatan di 80% dan saat melebihi. Kategori vendor dan item budget memakai daftar yang sama (`BUDGET_CATS` di `index.html`).
+- Cadangan JSON ikut menyertakan kategori, tanggal bayar, dan alokasi (cadangan lama tetap bisa diimpor).
+- Naikkan `CACHE` di `sw.js` setiap rilis (sekarang `v10`).

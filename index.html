@@ -105,6 +105,7 @@
   <section id="view-budget" class="hidden">
     <div id="budget-summary"></div>
     <div id="budget-projection" class="mt-4"></div>
+    <div id="budget-cats" class="mt-4"></div>
     <div id="budget-cashflow" class="mt-4"></div>
     <div id="budget-list" class="mt-4 flex flex-col gap-4"></div>
   </section>
@@ -255,6 +256,10 @@
       <input id="b-name" required maxlength="120" class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-base">
     </div>
     <div>
+      <label for="b-cat" class="block text-sm font-medium text-slate-700 mb-1">Kategori</label>
+      <select id="b-cat" class="w-full min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 text-base"></select>
+    </div>
+    <div>
       <label for="b-est" class="block text-sm font-medium text-slate-700 mb-1">Estimasi harga (Rp)</label>
       <input id="b-est" inputmode="numeric" required class="money w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-base">
     </div>
@@ -262,12 +267,35 @@
       <label for="b-act" class="block text-sm font-medium text-slate-700 mb-1">Biaya aktual (Rp)</label>
       <input id="b-act" inputmode="numeric" class="money w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-base" value="0">
     </div>
+    <label class="flex items-center gap-3 min-h-[44px] text-base">
+      <input id="b-paid" type="checkbox" class="w-6 h-6 accent-emerald-600">
+      Sudah dibayar
+    </label>
+    <div id="b-paid-wrap" class="hidden">
+      <label for="b-paiddate" class="block text-sm font-medium text-slate-700 mb-1">Tanggal bayar</label>
+      <input id="b-paiddate" type="date" class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-base">
+    </div>
     <p id="b-diff" class="text-sm text-slate-500"></p>
     <div class="flex gap-2 pt-1">
       <button type="button" id="b-delete" class="hidden min-h-[44px] px-4 rounded-lg text-rose-600 font-medium hover:bg-rose-50 transition-colors duration-150">Hapus</button>
       <span class="flex-1"></span>
       <button type="button" data-close class="min-h-[44px] px-4 rounded-lg text-slate-600 font-medium hover:bg-slate-100 transition-colors duration-150">Batal</button>
       <button type="submit" class="min-h-[44px] px-5 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors duration-150">Simpan item</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- DIALOG: ALOKASI PER KATEGORI -->
+<dialog id="dlg-cats" class="m-auto w-[92%] max-w-md rounded-2xl p-0 backdrop:bg-black/40">
+  <form id="form-cats" method="dialog" class="p-5 flex flex-col gap-3">
+    <h2 class="text-lg font-semibold">Alokasi budget per kategori</h2>
+    <p class="text-sm text-slate-500">Isi 0 untuk kategori tanpa alokasi. Pembayaran vendor dan item budget dihitung otomatis menurut kategorinya.</p>
+    <div id="cats-fields" class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1"></div>
+    <p id="cats-sum" class="text-sm text-slate-600 tabular-nums"></p>
+    <div class="flex gap-2 pt-1">
+      <span class="flex-1"></span>
+      <button type="button" data-close class="min-h-[44px] px-4 rounded-lg text-slate-600 font-medium hover:bg-slate-100 transition-colors duration-150">Batal</button>
+      <button type="submit" class="min-h-[44px] px-5 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors duration-150">Simpan alokasi</button>
     </div>
   </form>
 </dialog>
@@ -293,6 +321,11 @@
         <button type="button" id="btn-import" class="min-h-[44px] rounded-lg border border-slate-400 text-slate-700 font-medium hover:bg-slate-50 transition-colors duration-150">Impor cadangan</button>
       </div>
       <input id="f-import" type="file" accept="application/json,.json" class="hidden">
+    </div>
+    <div class="border-t border-slate-200 pt-4">
+      <h3 class="text-sm font-medium text-slate-700">Akun</h3>
+      <p class="text-sm text-slate-500 mt-1">Masuk sebagai <b id="acct-email" class="break-all">-</b></p>
+      <button type="button" id="btn-logout" class="mt-3 w-full min-h-[44px] rounded-lg border border-slate-400 text-slate-700 font-medium hover:bg-slate-50 transition-colors duration-150">Keluar</button>
     </div>
     <details id="danger-zone" class="border-t border-slate-200 pt-4">
       <summary class="min-h-[44px] flex items-center text-sm font-medium text-rose-600 cursor-pointer">Lanjutan: hapus data dan mode demo</summary>
@@ -446,6 +479,26 @@
   </div>
 </div>
 
+<!-- LOGIN -->
+<div id="login" role="dialog" aria-modal="true" aria-labelledby="login-title" class="hidden fixed inset-0 z-[70] bg-slate-50 overflow-y-auto" style="padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)">
+  <form id="form-login" class="min-h-full max-w-md mx-auto px-6 py-10 flex flex-col justify-center gap-4">
+    <div>
+      <h2 id="login-title" class="text-2xl font-semibold text-slate-800">Masuk</h2>
+      <p class="text-slate-500 mt-1">Data pernikahan hanya bisa dibuka dengan akun email yang terdaftar.</p>
+    </div>
+    <div>
+      <label for="l-email" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+      <input id="l-email" type="email" required autocomplete="username" class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-base">
+    </div>
+    <div>
+      <label for="l-pass" class="block text-sm font-medium text-slate-700 mb-1">Kata sandi</label>
+      <input id="l-pass" type="password" required autocomplete="current-password" class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-base">
+    </div>
+    <p id="login-err" role="alert" class="text-sm text-rose-600 min-h-[1.25rem]"></p>
+    <button type="submit" class="min-h-[44px] rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors duration-150">Masuk</button>
+  </form>
+</div>
+
 <div id="toast" popover="manual" role="status" class="hidden fixed top-24 inset-x-4 z-50 max-w-md mx-auto rounded-lg bg-slate-800 text-white text-sm px-4 py-3 shadow-lg"></div>
 
 <script>
@@ -454,6 +507,7 @@
   const CATEGORIES = ['KUA', 'Venue', 'Katering', 'Pakaian', 'Undangan', 'Dekorasi', 'Dokumentasi', 'Hiburan', 'Lainnya'];
   const PRIORITIES = [['normal', 'Normal'], ['tinggi', 'Tinggi'], ['rendah', 'Rendah']];
   const ASSIGNEES = ['Mempelai', 'Orang tua', 'Keluarga', 'WO'];
+  const BUDGET_CATS = ['Venue', 'Katering', 'Dekorasi', 'Pakaian', 'Fotografi', 'MUA', 'Undangan', 'Hiburan', 'Seserahan & mahar', 'Administrasi', 'Lainnya'];
   const PROFILES = { ade: { name: 'Ade', id: 1 }, rohman: { name: 'Rohman', id: 2 } };
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -464,7 +518,7 @@
   const pad = (n) => String(n).padStart(2, '0');
   const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 
-  const state = { tasks: [], budgets: [], settings: null, view: 'task',
+  const state = { tasks: [], budgets: [], catbud: [], loadingCat: true, channel: null, settings: null, view: 'task',
     fStatus: 'all', fCat: '', fTime: '', fQ: '', fPj: '', fPri: '', grp: {}, openMonths: {},
     loadingTasks: true, loadingBudget: true, loadingPay: true, loadErr: {}, noData: {}, fresh: {}, snap: null, lastOk: null,
     editTask: null, editBudget: null,
@@ -505,32 +559,65 @@
     const last = lastProfile();
     if (last && PROFILES[last]) selectProfile(last); else showPicker();
     if (!sb) { banner('Aplikasi belum terhubung ke Supabase. Isi <code>SUPABASE_URL</code> dan <code>SUPABASE_ANON_KEY</code> (lihat README).'); return; }
-    try {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) { const { error } = await sb.auth.signInAnonymously(); if (error) throw error; }
-    } catch (e) {
-      banner('Gagal masuk. Aktifkan <b>Anonymous sign-ins</b> di Supabase: Authentication → Sign In / Providers.');
-      state.authFailed = true;
-      state.loadingTasks = state.loadingBudget = state.loadingVendor = state.loadingPay = false; renderAll(); return;
+    sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') onSignedOut(); });
+    let session = null;
+    try { session = (await sb.auth.getSession()).data.session; } catch (e) { /* tampilkan login */ }
+    if (session && session.user && session.user.email && !session.user.is_anonymous) await startSession(session);
+    else { if (session) { try { await sb.auth.signOut(); } catch (e) { /* abaikan */ } } showLogin(); }
+  }
+
+  /* ---------- Login (email + kata sandi) ---------- */
+  function showLogin() { $('login-err').textContent = ''; $('login').classList.remove('hidden'); $('l-email').focus(); }
+  async function startSession(session) {
+    $('login').classList.add('hidden');
+    $('acct-email').textContent = session.user.email;
+    if (!state.channel) {
+      state.channel = sb.channel('wp-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, loadTasks)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, loadSettings)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'budgets' }, loadBudgets)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'category_budgets' }, loadCatbud)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, loadVendors)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vendor_payments' }, loadPayments)
+        .subscribe();
     }
-    sb.channel('wp-sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, loadTasks)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, loadSettings)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'budgets' }, loadBudgets)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, loadVendors)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vendor_payments' }, loadPayments)
-      .subscribe();
-    state.authed = true;
+    state.authed = true; state.authFailed = false;
     if (state.profile) { await refreshAll(); state.ready = true; }
   }
+  function onSignedOut() {
+    state.authed = false; state.ready = false;
+    if (state.channel) { sb.removeChannel(state.channel); state.channel = null; }
+    try { Object.keys(localStorage).filter((k) => k.startsWith('wp-snap-')).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* abaikan */ }
+    state.settings = null; state.tasks = []; state.budgets = []; state.catbud = []; state.vendors = []; state.payments = [];
+    state.fresh = {}; state.snap = null; state.loadErr = {}; state.noData = {};
+    document.querySelectorAll('dialog[open]').forEach((d) => d.close());
+    $('picker').classList.add('hidden');
+    renderAll(); showLogin();
+  }
+  lockSubmit($('form-login'), async () => {
+    $('login-err').textContent = '';
+    if (!sb) return;
+    let res; try { res = await sb.auth.signInWithPassword({ email: $('l-email').value.trim(), password: $('l-pass').value }); } catch (e) { res = { error: e }; }
+    if (res.error || !res.data || !res.data.session) {
+      const bad = res.error && /invalid|credentials/i.test(res.error.message || '');
+      $('login-err').textContent = bad ? 'Email atau kata sandi salah.' : 'Gagal masuk. Periksa koneksi lalu coba lagi.'; return;
+    }
+    $('l-pass').value = '';
+    if (!lastProfile() || !PROFILES[lastProfile()]) showPicker(); else $('picker').classList.add('hidden');
+    await startSession(res.data.session);
+  });
+  $('btn-logout').addEventListener('click', async () => {
+    if (!await appConfirm({ title: 'Keluar dari akun?', message: 'Anda perlu masuk lagi untuk membuka data.', ok: 'Keluar' })) return;
+    $('dlg-settings').close(); try { await sb.auth.signOut(); } catch (e) { /* abaikan */ } onSignedOut();
+  });
 
   /* ---------- Muat data + snapshot offline ---------- */
   // Setiap pemuat hanya mengambil data mempelai aktif dan membuang hasil yang datang terlambat
   // bila pengguna sudah berpindah. Bila gagal, data terakhir yang pernah berhasil dimuat (snapshot
   // di perangkat) ditampilkan dengan penanda jelas, bukan layar kosong yang menyesatkan.
-  const KEYS = ['settings', 'tasks', 'budgets', 'vendors', 'payments'];
-  const SRC = { tasks: ['tasks', 'due_date'], budgets: ['budgets', 'item_name'], vendors: ['vendors', 'name'], payments: ['vendor_payments', 'due_date'] };
-  const LOADFLAG = { tasks: 'loadingTasks', budgets: 'loadingBudget', vendors: 'loadingVendor', payments: 'loadingPay' };
+  const KEYS = ['settings', 'tasks', 'budgets', 'catbud', 'vendors', 'payments'];
+  const SRC = { tasks: ['tasks', 'due_date'], budgets: ['budgets', 'item_name'], catbud: ['category_budgets', 'category'], vendors: ['vendors', 'name'], payments: ['vendor_payments', 'due_date'] };
+  const LOADFLAG = { tasks: 'loadingTasks', budgets: 'loadingBudget', catbud: 'loadingCat', vendors: 'loadingVendor', payments: 'loadingPay' };
   const readSnap = (p) => { try { return JSON.parse(localStorage.getItem('wp-snap-' + p)); } catch (e) { return null; } };
   function saveSnap() {
     if (!KEYS.every((k) => state.fresh[k])) return;
@@ -559,7 +646,7 @@
     }
     renderAll(); renderSync();
   }
-  const loadSettings = () => pull('settings'), loadTasks = () => pull('tasks'), loadBudgets = () => pull('budgets'),
+  const loadSettings = () => pull('settings'), loadTasks = () => pull('tasks'), loadBudgets = () => pull('budgets'), loadCatbud = () => pull('catbud'),
     loadVendors = () => pull('vendors'), loadPayments = () => pull('payments');
   const hasNoData = () => KEYS.some((k) => state.noData[k]);
   function renderSync() {
@@ -899,14 +986,15 @@
   }
   function budgetStats() {
     const cap = state.settings ? Number(state.settings.master_budget) : 0;
-    const manual = state.budgets.reduce((a, b) => a + Number(b.actual_cost), 0);
+    const manual = state.budgets.filter((b) => b.paid_date).reduce((a, b) => a + Number(b.actual_cost), 0);
+    const bUnpaid = state.budgets.filter((b) => !b.paid_date).reduce((a, b) => a + Math.max(Number(b.est_cost), Number(b.actual_cost)), 0);
     const vPaid = state.payments.filter((p) => p.paid_date).reduce((a, p) => a + Number(p.amount), 0);
     const vDue = state.payments.filter((p) => !p.paid_date).reduce((a, p) => a + Number(p.amount), 0);
     const fins = state.vendors.map(vendorFin);
     const vUnsched = fins.reduce((a, f) => a + f.unsched, 0), vCommitted = fins.reduce((a, f) => a + f.committed, 0);
     const itemsProj = state.budgets.reduce((a, b) => a + Math.max(Number(b.est_cost), Number(b.actual_cost)), 0);
     const used = manual + vPaid;
-    return { cap, manual, vPaid, vDue, vUnsched, vCommitted, itemsProj, proj: vCommitted + itemsProj, used, left: cap - used, pct: cap > 0 ? (used / cap) * 100 : 0 };
+    return { cap, manual, bUnpaid, vPaid, vDue, vUnsched, vCommitted, itemsProj, proj: vCommitted + itemsProj, used, left: cap - used, pct: cap > 0 ? (used / cap) * 100 : 0 };
   }
   function renderProjection() {
     const el = $('budget-projection');
@@ -968,14 +1056,14 @@
   function renderBudget() {
     const sum = $('budget-summary'), list = $('budget-list');
     if (state.loadingBudget || state.loadingPay) {
-      $('budget-projection').innerHTML = ''; $('budget-cashflow').innerHTML = '';
+      $('budget-projection').innerHTML = ''; $('budget-cats').innerHTML = ''; $('budget-cashflow').innerHTML = '';
       sum.innerHTML = '<div class="skeleton skeleton-pulse h-32"></div>';
       list.innerHTML = Array.from({ length: 3 }, () => '<div class="skeleton skeleton-pulse h-20"></div>').join(''); return;
     }
-    const { cap, manual, vPaid, vDue, vUnsched, used, left, pct } = budgetStats();
+    const { cap, manual, bUnpaid, vPaid, vDue, vUnsched, used, left, pct } = budgetStats();
     const color = pct > 90 ? 'bg-rose-600' : pct >= 75 ? 'bg-amber-500' : 'bg-emerald-500';
     const leftColor = left < 0 ? 'text-rose-600' : 'text-slate-800';
-    const after = left - vDue - vUnsched;
+    const after = left - vDue - vUnsched - bUnpaid;
     sum.innerHTML = `<div class="rounded-xl bg-white border border-slate-200 p-4">
       <div class="text-sm text-slate-500">Sisa saldo</div>
       <div class="text-2xl font-semibold tabular-nums ${leftColor}">${rp(left)}</div>
@@ -987,50 +1075,71 @@
         <div><div class="text-slate-500">Total terpakai</div><div class="font-medium tabular-nums">${rp(used)}</div></div>
       </div>
       <div class="mt-3 pt-3 border-t border-slate-200 text-sm flex flex-col gap-1 tabular-nums">
-        <div class="flex justify-between gap-2"><span class="text-slate-500">Item budget (aktual)</span><span class="font-medium">${rp(manual)}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Item budget (sudah dibayar)</span><span class="font-medium">${rp(manual)}</span></div>
+        ${bUnpaid > 0 ? `<div class="flex justify-between gap-2"><span class="text-slate-500">Item budget belum dibayar</span><span class="font-medium">${rp(bUnpaid)}</span></div>` : ''}
         <div class="flex justify-between gap-2"><span class="text-slate-500">Pembayaran vendor (sudah dibayar)</span><span class="font-medium">${rp(vPaid)}</span></div>
         <div class="flex justify-between gap-2"><span class="text-slate-500">Tagihan vendor belum dibayar</span><span class="font-medium">${rp(vDue)}</span></div>
         ${vUnsched > 0 ? `<div class="flex justify-between gap-2"><span class="text-slate-500">Belum dijadwalkan (kontrak - jadwal)</span><span class="font-medium">${rp(vUnsched)}</span></div>` : ''}
-        ${vDue + vUnsched > 0 ? `<div class="flex justify-between gap-2"><span class="text-slate-500">Sisa setelah semua tagihan vendor</span><span class="font-medium ${after < 0 ? 'text-rose-600' : ''}">${rp(after)}</span></div>` : ''}
+        ${vDue + vUnsched + bUnpaid > 0 ? `<div class="flex justify-between gap-2"><span class="text-slate-500">Sisa setelah semua tagihan</span><span class="font-medium ${after < 0 ? 'text-rose-600' : ''}">${rp(after)}</span></div>` : ''}
       </div></div>`;
-    renderProjection(); renderCashflow();
+    renderProjection(); renderCats(); renderCashflow();
     if (state.noData.budgets) { list.innerHTML = '<div class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-500">Budget belum bisa dimuat. Periksa koneksi lalu coba lagi.</div>'; return; }
     if (!state.budgets.length) {
       list.innerHTML = '<div class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-500">Belum ada pengeluaran. Ketuk tombol + untuk mencatat item pertama. Pembayaran vendor dicatat di tab Vendor dan otomatis dihitung di sini.</div>'; return;
     }
     list.innerHTML = state.budgets.map((b) => {
-      const est = Number(b.est_cost), act = Number(b.actual_cost), diff = est - act;
-      const lunas = est > 0 && act >= est;
+      const est = Number(b.est_cost), act = Number(b.actual_cost), diff = est - act, paid = !!b.paid_date;
       const diffTxt = diff >= 0 ? `Selisih: ${rp(diff)} di bawah estimasi` : `<span class="text-rose-600 font-medium">Selisih: ${rp(-diff)} melebihi estimasi</span>`;
+      const badge = paid ? `<span class="text-sm text-emerald-700 font-medium shrink-0">Dibayar ${fmtDate(b.paid_date)}</span>` : '<span class="text-sm text-amber-600 font-medium shrink-0">Belum dibayar</span>';
       return `<article class="flex items-start gap-1 rounded-xl bg-white border border-slate-200 p-3 pl-4">
         <div class="flex-1 min-w-0 py-1">
-          <div class="flex items-center justify-between gap-2"><span class="font-medium text-slate-800">${esc(b.item_name)}</span>${lunas ? '<span class="text-sm text-emerald-700 font-medium">Lunas</span>' : ''}</div>
+          <div class="flex items-center justify-between gap-2"><span class="font-medium text-slate-800">${esc(b.item_name)}</span>${badge}</div>
+          <div class="text-xs text-slate-500 mt-0.5">${esc(b.category || 'Lainnya')}</div>
           <div class="text-sm text-slate-500 mt-1 tabular-nums">Est: ${rp(est)} &nbsp;|&nbsp; Akt: ${rp(act)}</div>
-          <div class="text-sm text-slate-500 mt-0.5">${diffTxt}</div>
+          ${act > 0 ? `<div class="text-sm text-slate-500 mt-0.5">${diffTxt}</div>` : ''}
+          <button data-bpay="${b.id}" class="mt-1 min-h-[44px] text-sm font-medium underline ${paid ? 'text-slate-500' : 'text-emerald-700'}">${paid ? 'Batalkan status dibayar' : 'Tandai sudah dibayar'}</button>
         </div>
         <button data-bedit="${b.id}" aria-label="Ubah ${esc(b.item_name)}" class="${EDIT_BTN}">${PENCIL}</button></article>`;
     }).join('');
   }
   $('budget-list').addEventListener('click', (e) => {
+    const p = e.target.closest('[data-bpay]'); if (p) return toggleBudgetPaid(p.dataset.bpay);
     const b = e.target.closest('[data-bedit]'); if (b) openBudget(state.budgets.find((x) => x.id === b.dataset.bedit));
   });
+  async function toggleBudgetPaid(id) {
+    const b = state.budgets.find((x) => x.id === id); if (!b || !guard()) return;
+    const prev = { paid_date: b.paid_date, actual_cost: b.actual_cost };
+    if (b.paid_date) b.paid_date = null; else { b.paid_date = todayStr(); if (!Number(b.actual_cost)) b.actual_cost = b.est_cost; }
+    renderAll();
+    const { error } = await sb.from('budgets').update({ paid_date: b.paid_date, actual_cost: b.actual_cost }).eq('id', b.id);
+    if (error) { Object.assign(b, prev); renderAll(); toast('Gagal menyimpan status pembayaran.'); }
+  }
   function updateDiff() {
     const d = num($('b-est').value) - num($('b-act').value);
     $('b-diff').textContent = d >= 0 ? `Selisih: ${rp(d)} di bawah estimasi` : `Selisih: ${rp(-d)} melebihi estimasi`;
   }
+  $('b-paid').addEventListener('change', () => {
+    const on = $('b-paid').checked; $('b-paid-wrap').classList.toggle('hidden', !on);
+    if (on) { if (!$('b-paiddate').value) $('b-paiddate').value = todayStr(); if (num($('b-act').value) === 0) { setMoney($('b-act'), num($('b-est').value)); updateDiff(); } }
+  });
   $('b-est').addEventListener('input', updateDiff); $('b-act').addEventListener('input', updateDiff);
   function openBudget(b) {
     state.editBudget = b || null;
     $('budget-dlg-title').textContent = b ? 'Ubah pengeluaran' : 'Tambah pengeluaran';
     $('b-name').value = b ? b.item_name : '';
+    $('b-cat').value = b && BUDGET_CATS.includes(b.category) ? b.category : 'Lainnya';
     setMoney($('b-est'), b ? b.est_cost : 0); setMoney($('b-act'), b ? b.actual_cost : 0);
+    $('b-paid').checked = !!(b && b.paid_date); $('b-paiddate').value = b && b.paid_date ? b.paid_date : '';
+    $('b-paid-wrap').classList.toggle('hidden', !$('b-paid').checked);
     $('b-delete').classList.toggle('hidden', !b); updateDiff();
     $('dlg-budget').showModal();
   }
   lockSubmit($('form-budget'), async (e) => {
     e.preventDefault(); if (!guard()) return;
-    const row = { item_name: $('b-name').value.trim(), est_cost: num($('b-est').value), actual_cost: num($('b-act').value), profile: state.profile };
+    const paid = $('b-paid').checked, est = num($('b-est').value);
+    const row = { item_name: $('b-name').value.trim(), category: $('b-cat').value, est_cost: est, actual_cost: num($('b-act').value), paid_date: paid ? ($('b-paiddate').value || todayStr()) : null, profile: state.profile };
     if (!row.item_name) return;
+    if (paid && row.actual_cost === 0) row.actual_cost = est;
     const q = state.editBudget ? sb.from('budgets').update(row).eq('id', state.editBudget.id) : sb.from('budgets').insert(row);
     const { error } = await q;
     if (error) return toast('Gagal menyimpan item.');
@@ -1044,6 +1153,59 @@
     if (error) return toast('Gagal menghapus item.');
     $('dlg-budget').close(); loadBudgets();
     undoToast('Item budget dihapus.', async () => { const r = await sb.from('budgets').insert(row); if (r.error) throw r.error; await loadBudgets(); });
+  });
+
+  /* ---------- Budget per kategori ---------- */
+  function catStats() {
+    const m = {}, g = (c) => m[c] || (m[c] = { paid: 0, commit: 0, alloc: 0 });
+    state.budgets.forEach((b) => { const x = g(b.category || 'Lainnya'); x.commit += Math.max(Number(b.est_cost), Number(b.actual_cost)); if (b.paid_date) x.paid += Number(b.actual_cost); });
+    state.vendors.forEach((v) => { g(v.category || 'Lainnya').commit += vendorFin(v).committed; });
+    state.payments.filter((p) => p.paid_date).forEach((p) => { const v = state.vendors.find((x) => x.id === p.vendor_id); g(v ? v.category : 'Lainnya').paid += Number(p.amount); });
+    state.catbud.forEach((c) => { g(c.category).alloc = Number(c.amount); });
+    return m;
+  }
+  function renderCats() {
+    const el = $('budget-cats'), m = catStats(), cap = state.settings ? Number(state.settings.master_budget) : 0;
+    const allocSum = state.catbud.reduce((a, c) => a + Number(c.amount), 0);
+    const names = BUDGET_CATS.concat(Object.keys(m).filter((c) => !BUDGET_CATS.includes(c))).filter((c) => m[c] && (m[c].alloc > 0 || m[c].commit > 0));
+    const rows = names.map((c) => {
+      const x = m[c], pct = x.alloc > 0 ? (x.commit / x.alloc) * 100 : 0;
+      const color = pct > 100 ? 'bg-rose-600' : pct >= 80 ? 'bg-amber-500' : 'bg-emerald-500';
+      const status = x.alloc <= 0 ? '<span class="text-slate-500">Belum ada alokasi</span>'
+        : pct > 100 ? `<span class="text-rose-600 font-medium">Melebihi alokasi ${rp(x.commit - x.alloc)}</span>`
+        : `<span class="${pct >= 80 ? 'text-amber-600' : 'text-slate-500'}">Sisa alokasi ${rp(x.alloc - x.commit)}</span>`;
+      return `<div class="py-2 border-t border-slate-100 first:border-t-0">
+        <div class="flex justify-between gap-2 items-baseline"><span class="font-medium text-slate-800">${esc(c)}</span><span class="text-sm tabular-nums">${rp(x.commit)}${x.alloc > 0 ? ' / ' + rp(x.alloc) : ''}</span></div>
+        ${x.alloc > 0 ? `<div class="mt-1 h-2 rounded-full bg-slate-200 overflow-hidden" role="progressbar" aria-label="${esc(c)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(100, Math.round(pct))}"><div class="h-full ${color}" style="width:${Math.min(pct, 100)}%"></div></div>` : ''}
+        <div class="text-xs mt-1 tabular-nums">${status} <span class="text-slate-500">| Sudah dibayar ${rp(x.paid)}</span></div></div>`;
+    }).join('');
+    const foot = allocSum <= 0 ? '' : cap > 0 && allocSum > cap
+      ? `<div class="mt-2 text-sm text-rose-600">Total alokasi ${rp(allocSum)} melebihi plafon sebesar ${rp(allocSum - cap)}.</div>`
+      : `<div class="mt-2 text-sm text-slate-500">Belum dialokasikan: <span class="font-medium tabular-nums">${rp(Math.max(0, cap - allocSum))}</span> dari plafon.</div>`;
+    el.innerHTML = `<div class="rounded-xl bg-white border border-slate-200 p-4">
+      <div class="flex items-start justify-between gap-2"><div><h2 class="font-semibold text-slate-800">Budget per kategori</h2><p class="text-sm text-slate-500">Komitmen (kontrak vendor + item budget) dibanding alokasi tiap kategori.</p></div>
+        <button data-cats-edit class="shrink-0 min-h-[44px] px-3 rounded-lg border border-emerald-600 text-emerald-700 text-sm font-medium hover:bg-emerald-50 transition-colors duration-150">Atur alokasi</button></div>
+      <div class="mt-2">${rows || '<p class="text-sm text-slate-500 py-2">Belum ada pengeluaran atau alokasi. Ketuk "Atur alokasi" untuk membagi plafon per kategori.</p>'}</div>${foot}</div>`;
+  }
+  const idr = (n) => new Intl.NumberFormat('id-ID').format(Number(n) || 0);
+  function updateCatsSum() {
+    const tot = [...$('cats-fields').querySelectorAll('input')].reduce((a, i) => a + num(i.value), 0), cap = state.settings ? Number(state.settings.master_budget) : 0;
+    $('cats-sum').innerHTML = `Total alokasi: <b>${rp(tot)}</b>` + (cap > 0 ? (tot > cap ? ` <span class="text-rose-600">(melebihi plafon ${rp(tot - cap)})</span>` : ` (sisa plafon ${rp(cap - tot)})`) : '');
+  }
+  function openCats() {
+    const cur = Object.fromEntries(state.catbud.map((c) => [c.category, c.amount]));
+    $('cats-fields').innerHTML = BUDGET_CATS.map((c, i) => `<div class="flex items-center gap-2"><label for="c-${i}" class="flex-1 text-sm font-medium text-slate-700">${esc(c)}</label><input id="c-${i}" data-cat="${esc(c)}" inputmode="numeric" class="w-40 min-h-[44px] rounded-lg border border-slate-300 px-3 text-base text-right tabular-nums" value="${idr(cur[c])}"></div>`).join('');
+    updateCatsSum(); $('dlg-cats').showModal();
+  }
+  $('cats-fields').addEventListener('input', (e) => { const i = e.target; i.value = i.value === '' ? '' : idr(num(i.value)); updateCatsSum(); });
+  $('budget-cats').addEventListener('click', (e) => { if (e.target.closest('[data-cats-edit]')) openCats(); });
+  lockSubmit($('form-cats'), async (e) => {
+    e.preventDefault(); if (!guard()) return;
+    const vals = [...$('cats-fields').querySelectorAll('input')].map((i) => ({ category: i.dataset.cat, amount: num(i.value) }));
+    const rows = vals.filter((v) => v.amount > 0).map((v) => ({ ...v, profile: state.profile })), zero = vals.filter((v) => !v.amount).map((v) => v.category);
+    if (rows.length) { const r = await sb.from('category_budgets').upsert(rows, { onConflict: 'profile,category' }); if (r.error) return toast('Gagal menyimpan alokasi.'); }
+    if (zero.length) { const r = await sb.from('category_budgets').delete().eq('profile', state.profile).in('category', zero); if (r.error) return toast('Gagal menyimpan alokasi.'); }
+    $('dlg-cats').close(); loadCatbud();
   });
 
   /* ---------- Pengaturan ---------- */
@@ -1080,6 +1242,7 @@
   const VENDOR_CATS = ['Venue', 'Katering', 'Dekorasi', 'Pakaian', 'Fotografi', 'MUA', 'Undangan', 'Hiburan', 'Lainnya'];
   const PAY_LABELS = ['DP', 'Cicilan', 'Pelunasan', 'Lainnya'];
   $('v-cat').innerHTML = VENDOR_CATS.map((c) => `<option>${c}</option>`).join('');
+  $('b-cat').innerHTML = BUDGET_CATS.map((c) => `<option>${c}</option>`).join('');
   $('p-label').innerHTML = PAY_LABELS.map((c) => `<option>${c}</option>`).join('');
 
   const daysUntil = (s) => Math.round((parseDate(s) - parseDate(todayStr())) / 864e5);
@@ -1515,11 +1678,11 @@
     /* Sisa saldo */
     const b = budgetStats();
     const barColor = b.pct > 90 ? 'bg-rose-600' : b.pct >= 75 ? 'bg-amber-500' : 'bg-emerald-500';
-    const after = b.left - b.vDue - b.vUnsched;
+    const after = b.left - b.vDue - b.vUnsched - b.bUnpaid;
     const sBody = `<div class="mt-1 text-3xl font-semibold tabular-nums ${b.left < 0 ? 'text-rose-600' : 'text-slate-800'}">${rp(b.left)}</div>
       <div class="mt-2 h-3 rounded-full bg-slate-200 overflow-hidden" role="progressbar" aria-label="Anggaran terpakai" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(b.pct)}"><div class="h-full ${barColor}" style="width:${Math.min(b.pct, 100)}%"></div></div>
       <div class="mt-1 text-sm text-slate-500 tabular-nums">${Math.round(b.pct)}% dari plafon ${rp(b.cap)} terpakai</div>
-      ${b.vDue + b.vUnsched > 0 ? `<div class="mt-2 text-sm tabular-nums text-slate-600">Setelah semua tagihan vendor: <span class="font-medium ${after < 0 ? 'text-rose-600' : ''}">${rp(after)}</span></div>` : ''}
+      ${b.vDue + b.vUnsched + b.bUnpaid > 0 ? `<div class="mt-2 text-sm tabular-nums text-slate-600">Setelah semua tagihan: <span class="font-medium ${after < 0 ? 'text-rose-600' : ''}">${rp(after)}</span></div>` : ''}
       ${link('data-hact="budget"', 'Lihat detail budget')}`;
 
     el.innerHTML = dateWarn + card('Tugas hari ini dan terlambat', tRight, tBody) +
@@ -1661,20 +1824,21 @@
 
   const COLS = {
     tasks: ['id', 'title', 'category', 'due_date', 'is_completed', 'notes', 'priority', 'assignee'],
-    budgets: ['id', 'item_name', 'est_cost', 'actual_cost'],
+    budgets: ['id', 'item_name', 'est_cost', 'actual_cost', 'category', 'paid_date'],
+    category_budgets: ['id', 'category', 'amount'],
     vendors: ['id', 'name', 'category', 'phone', 'total_cost', 'notes'],
     vendor_payments: ['id', 'vendor_id', 'label', 'amount', 'due_date', 'paid_date', 'receipt_path']
   };
   const pick = (row, cols) => Object.fromEntries(cols.filter((c) => row[c] !== undefined).map((c) => [c, row[c]]));
   const backupBundle = () => ({ app: 'wedding-planner', version: 1, exported_at: new Date().toISOString(), profile: state.profile,
-    settings: state.settings, tasks: state.tasks, budgets: state.budgets, vendors: state.vendors, vendor_payments: state.payments });
+    settings: state.settings, tasks: state.tasks, budgets: state.budgets, category_budgets: state.catbud, vendors: state.vendors, vendor_payments: state.payments });
   async function restoreBundle(b) {
     const pf = state.profile;
     if (b.settings) {
       const { error } = await sb.from('settings').upsert({ id: PROFILES[pf].id, profile: pf, wedding_date: b.settings.wedding_date, master_budget: b.settings.master_budget });
       if (error) throw error;
     }
-    for (const tbl of ['tasks', 'budgets', 'vendors', 'vendor_payments']) {
+    for (const tbl of ['tasks', 'budgets', 'category_budgets', 'vendors', 'vendor_payments']) {
       const rows = (b[tbl] || []).map((r) => ({ ...pick(r, COLS[tbl]), profile: pf }));
       for (let i = 0; i < rows.length; i += 200) { const { error } = await sb.from(tbl).insert(rows.slice(i, i + 200)); if (error) throw error; }
     }
@@ -1752,7 +1916,7 @@
 
   /* ---------- Sinkronisasi & mode demo ---------- */
   function renderAll() { renderCountdown(); renderHome(); renderTasks(); renderBudget(); renderVendors(); renderCalendar(); }
-  function refreshAll() { return Promise.all([loadSettings(), loadTasks(), loadBudgets(), loadVendors(), loadPayments()]); }
+  function refreshAll() { return Promise.all([loadSettings(), loadTasks(), loadBudgets(), loadCatbud(), loadVendors(), loadPayments()]); }
 
   // Muat ulang saat aplikasi kembali dibuka / online, agar data tidak basi bila realtime terputus.
   document.addEventListener('visibilitychange', () => { if (!document.hidden && sb && state.ready) refreshAll(); });
@@ -1765,7 +1929,7 @@
   const NIL_ID = '00000000-0000-0000-0000-000000000000';
 
   async function wipeAll() {
-    for (const tbl of ['vendors', 'tasks', 'budgets']) { // pembayaran ikut terhapus (cascade)
+    for (const tbl of ['vendors', 'tasks', 'budgets', 'category_budgets']) { // pembayaran ikut terhapus (cascade)
       const { error } = await sb.from(tbl).delete().eq('profile', state.profile);
       if (error) throw error;
     }
@@ -1790,11 +1954,13 @@
     ]);
     if (r.error) throw r.error;
     r = await ins('budgets', [
-      { item_name: 'Cincin kawin', est_cost: 3000000, actual_cost: 3000000 },
-      { item_name: 'Mahar', est_cost: 5000000, actual_cost: 5000000 },
-      { item_name: 'Seserahan', est_cost: 4000000, actual_cost: 1500000 },
-      { item_name: 'Souvenir', est_cost: 2500000, actual_cost: 0 }
+      { item_name: 'Cincin kawin', category: 'Seserahan & mahar', est_cost: 3000000, actual_cost: 3000000, paid_date: addDays(-10) },
+      { item_name: 'Mahar', category: 'Seserahan & mahar', est_cost: 5000000, actual_cost: 5000000, paid_date: addDays(-5) },
+      { item_name: 'Seserahan', category: 'Seserahan & mahar', est_cost: 4000000, actual_cost: 1500000, paid_date: addDays(-2) },
+      { item_name: 'Souvenir', category: 'Hiburan', est_cost: 2500000, actual_cost: 0, paid_date: null }
     ]);
+    if (r.error) throw r.error;
+    r = await ins('category_budgets', [['Venue', 30000000], ['Katering', 45000000], ['Dekorasi', 18000000], ['MUA', 7000000], ['Seserahan & mahar', 14000000]].map(([category, amount]) => ({ category, amount })));
     if (r.error) throw r.error;
     const vend = [
       { name: 'Gedung Serbaguna Mawar', category: 'Venue', phone: '081234567801', total_cost: 25000000, notes: 'Include kursi dan sound system' },
@@ -1861,10 +2027,10 @@
     $('profile-name').textContent = PROFILES[p].name;
     document.title = 'Wedding Planner · ' + PROFILES[p].name;
     // kosongkan seluruh data acara sebelumnya agar tidak bercampur
-    state.settings = null; state.tasks = []; state.budgets = []; state.vendors = []; state.payments = [];
+    state.settings = null; state.tasks = []; state.budgets = []; state.catbud = []; state.vendors = []; state.payments = [];
     state.settingsLoaded = false; state.ready = false;
     const live = !!sb && !state.authFailed;
-    state.loadingTasks = state.loadingBudget = state.loadingVendor = state.loadingPay = live;
+    state.loadingTasks = state.loadingBudget = state.loadingCat = state.loadingVendor = state.loadingPay = live;
     state.loadErr = {}; state.noData = {}; state.fresh = {}; state.lastOk = null; state.snap = readSnap(p);
     state.fQ = ''; state.fPj = ''; state.fPri = ''; state.grp = {}; state.openMonths = {};
     $('f-q').value = ''; $('f-pj').value = ''; $('f-pri').value = ''; renderSync();
