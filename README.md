@@ -106,3 +106,8 @@ Selama pendaftaran publik dimatikan, hanya akun buatan Anda yang bisa masuk. Jik
 - Rekap seperti Vendor: item dibeli dari total, total perkiraan, sudah dibeli, sisa, dan bar progres, per daftar maupun keseluruhan.
 - Terhubung ke Budget: item yang dibeli masuk \"Total terpakai\", yang belum dibeli masuk \"Sisa setelah semua tagihan\" dan proyeksi, dan semuanya ikut kategori daftar di \"Budget per kategori\". Jangan mencatat barang yang sama lagi sebagai item budget.
 - Migrasi: `20261114000000_shopping.sql`. Cadangan JSON ikut menyertakan daftar dan item.
+
+## Mode gelap
+- Pengaturan > **Tampilan**: *Sistem* (bawaan, mengikuti pengaturan perangkat), *Terang*, atau *Gelap*. Pilihan diingat di perangkat (`localStorage` kunci `wp-theme`) dan diterapkan sebelum halaman tampil, jadi tidak berkedip.
+- Warna mode gelap ada di bagian bawah `tailwind.src.css` (selektor `html.dark`) yang memetakan ulang kelas warna Tailwind. Kelas baru di `index.html` yang memakai warna `slate`, `emerald`, `rose`, atau `amber` perlu ditambahkan pemetaannya di sana, lalu jalankan `npm run build:css`.
+- `theme-color` browser ikut berganti (hijau di mode terang, `#151c25` di mode gelap). `CACHE` di `sw.js` sekarang `v22`. Tombol bulan/matahari di header mengganti terang/gelap dengan satu ketukan (otomatis memilih mode eksplisit).
