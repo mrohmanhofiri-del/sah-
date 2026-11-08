@@ -1,4 +1,4 @@
-const CACHE = 'wedding-planner-v11';
+const CACHE = 'wedding-planner-v16';
 const SHELL = ['./', './index.html', './config.js', './styles.css', './vendor/supabase.js', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
