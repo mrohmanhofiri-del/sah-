@@ -84,7 +84,7 @@ Selama pendaftaran publik dimatikan, hanya akun buatan Anda yang bisa masuk. Jik
 ## Build, aset lokal, dan kenyamanan tambahan
 
 **Tanpa CDN saat berjalan.** Tailwind tidak lagi dimuat dari `cdn.tailwindcss.com` (yang meng-compile CSS di browser dan tidak untuk produksi), dan supabase-js tidak lagi dari jsDelivr `@2`.
-- `styles.css` dibangun oleh Tailwind CLI **3.4.17** (terkunci di `package-lock.json`) dari kelas yang ada di `index.html`. Workflow deploy menjalankan `npm ci` lalu `npm run build:css` otomatis. Berkas hasil build ikut disertakan di repo agar bisa dibuka lokal tanpa langkah tambahan.
+- `styles.css` dibangun oleh Tailwind CLI **4.3.3** (terkunci di `package-lock.json`) dari kelas yang ada di `index.html` dan `app.js`. Workflow deploy menjalankan `npm ci` lalu `npm run build:css` otomatis. Berkas hasil build ikut disertakan di repo agar bisa dibuka lokal tanpa langkah tambahan.
 - Setiap kali menambah kelas Tailwind baru di `index.html`, jalankan `npm install` (sekali) lalu `npm run build:css` untuk melihatnya lokal. Jangan menyusun nama kelas dari potongan string (misalnya `'bg-' + warna`) karena tidak akan terdeteksi saat build.
 - `vendor/supabase.js` adalah supabase-js **2.118.0** (build UMD resmi, dirilis 15 Okt 2026). Untuk memperbarui: `npm pack @supabase/supabase-js@<versi>` lalu salin `package/dist/umd/supabase.js` ke `vendor/supabase.js`. Pilih versi yang sudah beberapa minggu dirilis.
 - Service worker kini menyimpan semua aset sendiri, jadi aplikasi tampil utuh walau pembukaan pertama di sinyal buruk. `styles.css` diambil network-first agar CSS tidak ketinggalan dari HTML setelah deploy. **Naikkan `CACHE` di `sw.js` setiap rilis** (sekarang `v7`).
@@ -109,8 +109,26 @@ Selama pendaftaran publik dimatikan, hanya akun buatan Anda yang bisa masuk. Jik
 
 ## Mode gelap
 - Pengaturan > **Tampilan**: *Sistem* (bawaan, mengikuti pengaturan perangkat), *Terang*, atau *Gelap*. Pilihan diingat di perangkat (`localStorage` kunci `wp-theme`) dan diterapkan sebelum halaman tampil, jadi tidak berkedip.
-- Warna mode gelap ada di bagian bawah `tailwind.src.css` (selektor `html.dark`) yang memetakan ulang kelas warna Tailwind. Kelas baru di `index.html` yang memakai warna `slate`, `emerald`, `rose`, atau `amber` perlu ditambahkan pemetaannya di sana, lalu jalankan `npm run build:css`.
-- `theme-color` browser ikut berganti (hijau di mode terang, `#151c25` di mode gelap). `CACHE` di `sw.js` sekarang `v23`. Tombol bulan/matahari di header mengganti terang/gelap dengan satu ketukan (otomatis memilih mode eksplisit).
+- Warna mode gelap ada di bagian atas `tailwind.src.css`: satu tabel token (`:root` untuk terang, `html.dark` untuk gelap) yang dibaca kelas seperti `bg-surface`, `text-muted`, `border-line`. Kelas baru yang memakai token otomatis ikut mode gelap; untuk warna baru, tambahkan variable di kedua blok dan satu baris di `@theme inline`, lalu jalankan `npm run build:css`.
+- `theme-color` browser ikut berganti (hijau di mode terang, `#151c25` di mode gelap). `CACHE` di `sw.js` sekarang `v25`. Tombol bulan/matahari di header mengganti terang/gelap dengan satu ketukan (otomatis memilih mode eksplisit).
 
 ## Alur masuk
 Dua langkah dengan penunjuk di atas: **1 Masuk** (email dan kata sandi, tombol mata untuk melihat sandi, status "Memproses...", pesan error jelas) lalu **2 Pilih acara** (Ade atau Rohman; menampilkan akun yang sedang masuk dan tombol *Bukan Anda? Keluar*). Bila acara terakhir sudah tersimpan, langkah 2 dilewati. Layar masuk punya tombol terang/gelap sendiri di pojok kanan atas.
+
+## Aksesibilitas, performa, dan keep-alive
+- **Layar masuk / pilih acara**: saat terbuka, header, isi, navigasi, dan tombol + dinonaktifkan (`inert`) sehingga fokus keyboard dan pembaca layar tetap di dalam dialog; fokus kembali ke pemicu saat ditutup. `Esc` menutup pemilih acara bila sudah ada acara aktif.
+- **Kalender**: sel `h-14` dengan jarak 8 px, penanda kecil memakai teks 12 px.
+- **Kontras**: `slate-500` digelapkan di `tailwind.config.js` (`#566377`) agar teks sekunder lolos 4.5:1 di atas latar bertint. Mode gelap tidak berubah.
+- **Performa**: skrip aplikasi dipindah dari `index.html` ke `app.js`; ketiga skrip (`supabase.js`, `config.js`, `app.js`) memakai `defer` sehingga tidak memblokir render. `index.html` turun dari ~188 KB menjadi markup saja, dan `app.js` di-cache service worker (network-first seperti `styles.css`). **Kelas Tailwind kini dipindai dari `index.html` dan `app.js`.**
+- **Keep-alive Supabase** (`.github/workflows/keepalive.yml`), sepenuhnya otomatis:
+  1. Setiap 2 hari mengirim permintaan ke REST dan Auth Supabase agar project free tier tidak dijeda (jeda terjadi setelah ~7 hari tanpa aktivitas).
+  2. Bila project ternyata sudah dijeda (status `INACTIVE`), workflow memanggil **Restore** lewat Management API dan menunggu sampai `ACTIVE_HEALTHY` (maks. 10 menit). Memakai secret yang sudah ada: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`. Restore hanya bisa untuk project yang dijeda < 90 hari dan selama kuota 2 project aktif belum penuh.
+  3. Di akhir setiap run, workflow menonaktifkan lalu mengaktifkan dirinya lagi lewat API GitHub untuk menyegarkan jadwal, supaya tidak dimatikan GitHub setelah 60 hari tanpa aktivitas repo.
+  - Bila ada langkah yang gagal, GitHub mengirim email notifikasi run gagal. Uji manual: Actions > Supabase keep-alive > Run workflow.
+
+## Sistem gaya (Tailwind v4, token, komponen)
+- **Tailwind v4.3.3** dengan konfigurasi CSS-first di `tailwind.src.css` (tanpa `tailwind.config.js`). Build: `npm ci && npm run build:css`. Butuh browser Chrome 111+, Safari 16.4+, Firefox 128+ (v4 memakai `color-mix`, `@property`, dan `@layer`).
+- **Token warna berdasarkan peran**, bukan nomor palet: `bg-page`, `bg-surface`, `bg-fill`, `text-ink` s.d. `text-ink-4`, `text-muted`, `border-line`, `border-line-strong`, `bg-brand`, `text-brand-ink-2`, `bg-danger-soft`, `text-warn-ink`, dan seterusnya. Nilai terang dan gelapnya ada di dua blok yang berdampingan (`:root` dan `html.dark`), sehingga aturan `html.dark` tulisan tangan berkurang dari 73 menjadi 10 (hanya latar dialog, kontrol form, ikon tema, dan kartu hero).
+- **Komponen** (`@layer components`): `.field-label`, `.input`, `.btn-primary`, `.btn-ghost`, `.btn-danger-ghost`, `.card`, `.empty-box`. Utilitas khusus: `min-h-touch` (44 px), `pt-safe`, `pb-safe`, `mt-safe`, `mb-safe` (safe-area).
+- Blok `<style>` inline di `index.html` dipindah ke `tailwind.src.css` sehingga ikut diminify dan di-cache.
+- Perubahan kecil yang disengaja: batas `select` dan `textarea` di mode terang kini memakai warna batas kontrol (`#7b8aa0`) seperti `input`; tombol berkas di Pengaturan ikut warna mode gelap.

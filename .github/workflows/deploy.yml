@@ -57,7 +57,7 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           mkdir _site
-          cp index.html styles.css manifest.json sw.js icon.svg icon-192.png icon-512.png _site/
+          cp index.html app.js styles.css manifest.json sw.js icon.svg icon-192.png icon-512.png _site/
           cp -r vendor _site/vendor
           printf 'window.APP_CONFIG = { SUPABASE_URL: "%s", SUPABASE_ANON_KEY: "%s" };\n' "$SUPABASE_URL" "$SUPABASE_ANON_KEY" > _site/config.js
       - uses: actions/upload-pages-artifact@v3

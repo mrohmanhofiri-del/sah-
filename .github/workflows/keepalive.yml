@@ -1,0 +1,76 @@
+name: Supabase keep-alive
+
+# Supabase free tier menjeda project setelah ~7 hari tanpa aktivitas.
+# 1) Setiap 2 hari menyentuh API agar tidak dijeda.
+# 2) Bila ternyata sudah dijeda, otomatis memanggil Restore lewat Management API.
+# 3) Menyegarkan jadwal workflow ini sendiri agar tidak dinonaktifkan GitHub (aturan 60 hari tanpa aktivitas repo).
+on:
+  schedule:
+    - cron: '17 3 */2 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write   # dipakai untuk menyegarkan jadwal workflow ini
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Ping, dan pulihkan otomatis bila project terjeda
+        run: |
+          set -uo pipefail
+          for v in SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_ACCESS_TOKEN PROJECT_ID; do
+            [ -n "${!v:-}" ] || { echo "Secret untuk $v belum diisi." >&2; exit 1; }
+          done
+          base="${SUPABASE_URL%/}"
+
+          ping() {
+            local ok=0
+            for path in "/rest/v1/settings?select=id&limit=1" "/auth/v1/health"; do
+              code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 \
+                -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $SUPABASE_ANON_KEY" "$base$path" || echo 000)
+              echo "GET $path -> $code"
+              case "$code" in 2*|401|403) ;; *) ok=1 ;; esac
+            done
+            return $ok
+          }
+          status() {
+            curl -sS --max-time 30 -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              "https://api.supabase.com/v1/projects/$PROJECT_ID" | jq -r '.status // "UNKNOWN"'
+          }
+
+          if ping; then echo "Project aktif."; exit 0; fi
+
+          st=$(status); echo "Status project: $st"
+          if [ "$st" != "INACTIVE" ] && [ "$st" != "PAUSED" ]; then
+            echo "Project tidak merespons tetapi statusnya bukan 'dijeda' ($st). Cek dashboard Supabase." >&2; exit 1
+          fi
+
+          echo "Project dijeda. Memanggil restore..."
+          code=$(curl -sS -o /tmp/restore.json -w '%{http_code}' -X POST --max-time 60 \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" -d '{}' \
+            "https://api.supabase.com/v1/projects/$PROJECT_ID/restore")
+          echo "Restore -> $code"; cat /tmp/restore.json; echo
+          case "$code" in 2*) ;; *) echo "Restore gagal (batas 2 project aktif, atau sudah >90 hari dijeda?). Restore manual di dashboard." >&2; exit 1 ;; esac
+
+          for i in $(seq 1 30); do
+            sleep 20; st=$(status); echo "[$i/30] status: $st"
+            [ "$st" = "ACTIVE_HEALTHY" ] && break
+          done
+          [ "$st" = "ACTIVE_HEALTHY" ] || { echo "Project belum sehat setelah 10 menit." >&2; exit 1; }
+          ping && echo "Project berhasil dipulihkan." || exit 1
+
+      - name: Segarkan jadwal workflow (cegah dinonaktifkan GitHub)
+        if: always()
+        continue-on-error: true
+        run: |
+          gh workflow disable keepalive.yml --repo "$GITHUB_REPOSITORY" || true
+          gh workflow enable keepalive.yml --repo "$GITHUB_REPOSITORY"
