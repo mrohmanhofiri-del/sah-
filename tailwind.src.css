@@ -157,6 +157,7 @@ html.dark .bg-emerald-700 { --surface: #fff; --brand-ink-3: #0a4538; }
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
   --color-line-control: var(--line-control);
+  --color-control: var(--control-border); /* batas kontrol interaktif: kontras >= 3:1 (WCAG 1.4.11) */
   /* Hijau (tema) */
   --color-brand: var(--brand);
   --color-brand-mid: var(--brand-mid);
@@ -222,6 +223,7 @@ html.dark .bg-emerald-700 { --surface: #fff; --brand-ink-3: #0a4538; }
   body { -webkit-font-smoothing: antialiased; }
   main { overscroll-behavior-y: contain; }
   h1, h2, h3 { text-wrap: balance; }
+  h2[tabindex="-1"]:focus { outline: none; } /* judul tampilan (sr-only) hanya target fokus */
   p { text-wrap: pretty; }
   button { transition: transform .12s ease-out, background-color .15s, color .15s, border-color .15s; }
   ::placeholder { color: var(--placeholder); opacity: 1; }
@@ -231,7 +233,7 @@ html.dark .bg-emerald-700 { --surface: #fff; --brand-ink-3: #0a4538; }
 /* Komponen: pola yang berulang puluhan kali di index.html dan app.js */
 @layer components {
   .field-label { @apply block text-sm font-medium text-ink-3 mb-1; }
-  .input { @apply w-full min-h-touch rounded-lg border border-line-strong px-3 text-base; }
+  .input { @apply w-full min-h-touch rounded-lg border border-control px-3 text-base; }
   .btn-ghost { @apply min-h-touch px-4 rounded-lg text-ink-4 font-medium hover:bg-hover-2 transition-colors duration-150; }
   .btn-danger-ghost { @apply min-h-touch px-4 rounded-lg text-danger-ink font-medium hover:bg-danger-soft transition-colors duration-150; }
   .btn-primary { @apply min-h-touch px-5 rounded-lg bg-brand text-white font-medium hover:bg-brand-strong transition-colors duration-150; }

@@ -8,6 +8,7 @@
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const rp = (n) => 'Rp ' + new Intl.NumberFormat('id-ID').format(Number(n) || 0);
+  const rpn = (n) => `<span class="whitespace-nowrap">${rp(n)}</span>`;   // untuk teks yang bisa membungkus: "Rp" dan angkanya selalu satu baris
   const num = (s) => parseInt(String(s).replace(/\D/g, ''), 10) || 0;
   const parseDate = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
   const fmtDate = (s) => parseDate(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -282,7 +283,13 @@
   /* ---------- Navigasi ---------- */
   const VIEWS = ['home', 'task', 'calendar', 'vendor', 'budget'];
   const FAB_LABEL = { home: 'Tambah tugas', task: 'Tambah tugas', calendar: 'Tambah tugas', vendor: 'Tambah vendor', budget: 'Tambah pengeluaran' };
-  function setView(v) {
+  const VIEW_TITLE = { home: 'Beranda', task: 'Tugas', calendar: 'Kalender', vendor: 'Vendor', budget: 'Budget' };
+  const viewFromHash = () => { const h = location.hash.slice(1); return VIEWS.includes(h) ? h : null; };
+  let bootView = viewFromHash();   // tautan dalam (#task, #budget, ...) hanya dipakai sekali, saat acara pertama dibuka
+  const pageTitle = (v) => (v && v !== 'home' ? VIEW_TITLE[v] + ' · ' : '') + 'Wedding Planner' + (state.profile && PROFILES[state.profile] ? ' · ' + PROFILES[state.profile].name : '');
+  /* o.history: 'push' (ketukan pengguna: tombol Back kembali ke tab sebelumnya) | 'replace' (pembukaan awal). o.focus: pindahkan fokus ke judul tampilan. */
+  function setView(v, o) {
+    o = o || {};
     state.view = v;
     VIEWS.forEach((n) => $('view-' + n).classList.toggle('hidden', n !== v));
     document.querySelectorAll('.nav-btn').forEach((b) => {
@@ -292,10 +299,16 @@
       b.setAttribute('aria-current', on ? 'page' : 'false');
     });
     $('fab').setAttribute('aria-label', FAB_LABEL[v]);
+    document.title = pageTitle(v);
+    if (o.history && !(history.state && history.state.dlg)) {
+      const url = '#' + v;
+      if (location.hash !== url) { try { history[o.history === 'push' ? 'pushState' : 'replaceState']({ view: v }, '', url); } catch (e) { /* abaikan */ } }
+    }
     if (v === 'calendar') renderCalendar();
     if (v === 'home') renderHome();
+    if (o.focus) { const h = $('h-' + v); if (h) h.focus({ preventScroll: true }); }
   }
-  document.querySelectorAll('.nav-btn').forEach((b) => b.addEventListener('click', () => setView(b.dataset.nav)));
+  document.querySelectorAll('.nav-btn').forEach((b) => b.addEventListener('click', () => setView(b.dataset.nav, { history: 'push', focus: true })));
 
   /* ---------- Filter ---------- */
   function fillSelects() {
@@ -309,7 +322,7 @@
     const items = [['all', 'Semua'], ['pending', 'Belum selesai'], ['done', 'Selesai']];
     $('status-chips').innerHTML = items.map(([k, l]) => {
       const on = state.fStatus === k;
-      return `<button data-status="${k}" aria-pressed="${on}" class="min-h-touch flex-1 rounded-full border text-sm font-medium transition-colors duration-150 ${on ? 'bg-brand border-brand-edge text-white' : 'bg-surface border-line-strong text-ink-3'}">${l}</button>`;
+      return `<button data-status="${k}" aria-pressed="${on}" class="min-h-touch flex-1 rounded-full border text-sm font-medium transition-colors duration-150 ${on ? 'bg-brand border-brand-edge text-white' : 'bg-surface border-control text-ink-3'}">${l}</button>`;
     }).join('');
   }
   $('status-chips').addEventListener('click', (e) => {
@@ -332,7 +345,7 @@
     const when = t.is_completed ? '<span class="text-brand-ink-2 font-medium">Selesai</span>' : od ? `<span class="text-danger-ink font-semibold">Terlambat ${-d} hari</span>` : d === 0 ? '<span class="text-warn-ink font-semibold">Hari ini</span>' : `<span class="text-ink-4">${fmtDate(t.due_date)}</span>`;
     const chip = (x, c) => `<span class="rounded-full px-2 py-0.5 text-xs font-medium ${c || 'bg-fill text-ink-4'}">${x}</span>`;
     const chips = chip(esc(t.category)) + (t.priority === 'tinggi' ? chip('Prioritas tinggi', 'bg-danger-soft text-danger-ink') : '') + (t.assignee ? chip(esc(t.assignee), 'bg-brand-soft text-brand-ink-3') : '');
-    return `<div class="flex items-start gap-1 pr-3 ${od ? 'border-l-4 border-l-rose-500' : ''}">
+    return `<div class="flex items-start gap-1 pr-3 ${od ? 'shadow-[inset_4px_0_0_0_var(--danger-edge)]' : ''}">
         <button data-toggle="${t.id}" role="checkbox" aria-checked="${t.is_completed}" aria-label="Tandai ${esc(t.title)} selesai" class="shrink-0 w-11 h-12 flex items-center justify-center">
           <span class="w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors duration-150 ${t.is_completed ? 'bg-brand border-brand-edge' : 'bg-surface border-line-control'}">${t.is_completed ? CHECK : ''}</span></button>
         <button data-edit="${t.id}" aria-label="Ubah tugas ${esc(t.title)}" class="flex-1 min-w-0 py-3 text-left">
@@ -344,7 +357,9 @@
     const list = $('task-list');
     const nf = [state.fCat, state.fTime, state.fPj, state.fPri].filter(Boolean).length;
     $('btn-filter-n').textContent = nf; $('btn-filter-n').classList.toggle('hidden', !nf);
-    $('task-progress').textContent = state.tasks.length ? `${state.tasks.filter((t) => t.is_completed).length} dari ${state.tasks.length} tugas selesai` : '';
+    const doneAll = state.tasks.filter((t) => t.is_completed).length;
+    $('task-progress').textContent = state.tasks.length ? `${doneAll} dari ${state.tasks.length} tugas selesai` : '';
+    $('task-bar-wrap').classList.toggle('hidden', !state.tasks.length); $('task-bar').style.width = (state.tasks.length ? Math.round(doneAll / state.tasks.length * 100) : 0) + '%';
     if (state.loadingTasks) {
       list.innerHTML = Array.from({ length: 4 }, () => '<div class="skeleton skeleton-pulse h-24"></div>').join(''); return;
     }
@@ -475,7 +490,7 @@
     const confirmOpen = $('dlg-confirm').open;
     const d = [...document.querySelectorAll('dialog[open]')].filter((x) => x.id !== 'dlg-confirm').pop();
     if (confirmOpen) { if (d) history.pushState({ dlg: d.id }, ''); return; }       // Back saat konfirmasi tampil: abaikan
-    if (!d) return;
+    if (!d) { const v = viewFromHash() || 'home'; if (v !== state.view) setView(v, { focus: true }); return; }   // Back antar tab
     if (isDirty(d)) history.pushState({ dlg: d.id }, '');                            // tetap di halaman sampai pengguna memutuskan
     requestClose(d);
   });
@@ -569,14 +584,14 @@
       const m = months[k], late = m.items.some((p) => !p.paid_date && p.due_date < todayStr()), open = !!state.openMonths[k];
       const tag = late ? '<span class="text-danger-ink font-medium"> Ada yang terlambat</span>' : k === thisM ? '<span class="text-brand-ink-2"> Bulan ini</span>' : '';
       const items = m.items.slice().sort((a, b) => a.due_date.localeCompare(b.due_date)).map((p) => `<div class="flex justify-between gap-2 text-sm py-1">
-          <div class="min-w-0"><div><span class="font-medium">${esc(vendorName(p.vendor_id))}</span> | ${esc(p.label)}</div><div class="text-muted">${fmtDate(p.due_date)} &nbsp;|&nbsp; ${payBadge(p)}</div></div>
-          <div class="tabular-nums shrink-0">${rp(p.amount)}</div></div>`).join('');
+          <div class="min-w-0"><div><span class="font-medium">${esc(vendorName(p.vendor_id))}</span> &middot; ${esc(p.label)}</div><div class="text-muted"><span class="whitespace-nowrap">${fmtDate(p.due_date)}</span> &middot; ${payBadge(p)}</div></div>
+          <div class="tabular-nums shrink-0 whitespace-nowrap">${rp(p.amount)}</div></div>`).join('');
       return `<details data-m="${k}" class="group border-t border-line-soft first:border-t-0" ${open ? 'open' : ''}>
         <summary data-m-sum class="py-2 min-h-touch cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-          <div class="flex justify-between gap-2 items-baseline"><span class="font-medium text-ink-2">${monthLabel(k + '-01')}${tag}</span>
-            <span class="tabular-nums font-medium">${m.pay > 0 ? rp(m.pay) : '<span class="text-brand-ink-2">Lunas</span>'}</span></div>
+          <div class="flex justify-between gap-3 items-baseline"><span class="min-w-0 font-medium text-ink-2">${monthLabel(k + '-01')}${tag}</span>
+            <span class="tabular-nums font-medium shrink-0 whitespace-nowrap">${m.pay > 0 ? rp(m.pay) : '<span class="text-brand-ink-2">Lunas</span>'}</span></div>
           <div class="mt-1 h-2 rounded-full bg-fill flex overflow-hidden"><div class="bg-emerald-400" style="width:${(m.paid / max) * 100}%"></div><div class="bg-amber-400" style="width:${(m.pay / max) * 100}%"></div></div>
-          <div class="text-xs text-muted mt-1 tabular-nums">${m.paid > 0 ? 'Sudah dibayar ' + rp(m.paid) + ' | ' : ''}${m.items.length} pembayaran</div></summary>
+          <div class="text-sm text-muted mt-1 tabular-nums">${m.paid > 0 ? 'Sudah dibayar ' + rpn(m.paid) + ' &middot; ' : ''}${m.items.length} pembayaran</div></summary>
         <div class="pb-2 pl-1">${items}</div></details>`;
     }).join('');
     el.innerHTML = `<div class="card">
@@ -585,7 +600,7 @@
       <div class="mt-2 text-sm">Total yang masih harus keluar: <span class="font-semibold tabular-nums">${rp(totalOut)}</span></div>
       <div class="mt-1 text-xs text-muted flex gap-3"><span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-xs bg-amber-400"></span>Harus keluar</span><span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-xs bg-emerald-400"></span>Sudah dibayar</span></div>
       <div class="mt-2">${rows}</div>
-      ${unsched > 0 ? `<div class="border-t border-line-soft pt-2 flex justify-between gap-2 text-sm"><span class="text-warn-ink">Belum dijadwalkan (selisih kontrak dan jadwal bayar)</span><span class="tabular-nums font-medium">${rp(unsched)}</span></div>` : ''}</div>`;
+      ${unsched > 0 ? `<div class="border-t border-line-soft pt-2 flex justify-between gap-2 text-sm"><span class="min-w-0 text-warn-ink">Belum dijadwalkan (selisih kontrak dan jadwal bayar)</span><span class="tabular-nums font-medium shrink-0 whitespace-nowrap">${rp(unsched)}</span></div>` : ''}</div>`;
   }
   $('budget-cashflow').addEventListener('click', (e) => {
     const sum = e.target.closest('[data-m-sum]'); if (!sum) return;
@@ -620,7 +635,7 @@
         <div class="flex justify-between gap-2"><span class="text-muted">Tagihan vendor belum dibayar</span><span class="font-medium">${rp(vDue)}</span></div>
         ${vUnsched > 0 ? `<div class="flex justify-between gap-2"><span class="text-muted">Belum dijadwalkan (kontrak - jadwal)</span><span class="font-medium">${rp(vUnsched)}</span></div>` : ''}
         ${vDue + vUnsched + bUnpaid > 0 ? `<div class="flex justify-between gap-2"><span class="text-muted">Sisa setelah semua tagihan</span><span class="font-medium ${after < 0 ? 'text-danger-ink' : ''}">${rp(after)}</span></div>` : ''}
-      </div><p class="pb-2 text-xs text-muted">Jangan mencatat biaya yang sama di tab Vendor, daftar belanja, dan item budget agar tidak terhitung dua kali.</p></details></div>`;
+      </div><p class="pb-2 text-sm text-muted">Jangan mencatat biaya yang sama di tab Vendor, daftar belanja, dan item budget agar tidak terhitung dua kali.</p></details></div>`;
     renderCats(); renderCashflow();
     if (state.noData.budgets) { list.innerHTML = '<div class="empty-box">Budget belum bisa dimuat. Periksa koneksi lalu coba lagi.</div>'; return; }
     if (!state.budgets.length) {
@@ -628,13 +643,13 @@
     }
     list.innerHTML = state.budgets.map((b) => {
       const est = Number(b.est_cost), act = Number(b.actual_cost), diff = est - act, paid = !!b.paid_date;
-      const diffTxt = diff >= 0 ? `Selisih: ${rp(diff)} di bawah estimasi` : `<span class="text-danger-ink font-medium">Selisih: ${rp(-diff)} melebihi estimasi</span>`;
+      const diffTxt = diff >= 0 ? `Selisih: ${rpn(diff)} di bawah estimasi` : `<span class="text-danger-ink font-medium">Selisih: ${rpn(-diff)} melebihi estimasi</span>`;
       const badge = paid ? `<span class="text-sm text-brand-ink-2 font-medium shrink-0">Dibayar ${fmtDate(b.paid_date)}</span>` : '<span class="text-sm text-warn-ink font-medium shrink-0">Belum dibayar</span>';
       return `<article class="flex items-start gap-1 rounded-xl bg-surface border border-line p-3 pl-4">
         <div class="flex-1 min-w-0 py-1">
           <div class="flex items-center justify-between gap-2"><span class="font-medium text-ink-2">${esc(b.item_name)}</span>${badge}</div>
-          <div class="text-xs text-muted mt-0.5">${esc(b.category || 'Lainnya')}</div>
-          <div class="text-sm text-muted mt-1 tabular-nums">Est: ${rp(est)} &nbsp;|&nbsp; Akt: ${rp(act)}</div>
+          <div class="text-sm text-muted mt-0.5">${esc(b.category || 'Lainnya')}</div>
+          <div class="text-sm text-muted mt-1 tabular-nums">Est: ${rpn(est)} &middot; Akt: ${rpn(act)}</div>
           ${act > 0 ? `<div class="text-sm text-muted mt-0.5">${diffTxt}</div>` : ''}
           <button data-bpay="${b.id}" class="mt-1 min-h-touch text-sm font-medium underline ${paid ? 'text-muted' : 'text-brand-ink-2'}">${paid ? 'Batalkan status dibayar' : 'Tandai sudah dibayar'}</button>
         </div>
@@ -736,7 +751,7 @@
             <span class="w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors duration-150 ${i.paid_date ? 'bg-brand border-brand-edge' : 'bg-surface border-line-control'}">${i.paid_date ? CHECK : ''}</span></button>
           <div class="flex-1 min-w-0 py-2">
             <div class="font-medium ${i.paid_date ? 'text-muted' : ''}">${esc(i.name)}${Number(i.qty) > 1 ? ` <span class="text-muted font-normal">x${i.qty}</span>` : ''}</div>
-            <div class="text-sm text-muted tabular-nums">${i.paid_date ? `<span class="text-brand-ink-2">Dibeli ${fmtDate(i.paid_date)}</span> | ${rp(i.actual_cost)}` : 'Estimasi ' + rp(i.est_cost)}${i.store ? ' | ' + esc(i.store) : ''}</div>
+            <div class="text-sm text-muted tabular-nums">${i.paid_date ? `<span class="text-brand-ink-2">Dibeli ${fmtDate(i.paid_date)}</span> &middot; ${rpn(i.actual_cost)}` : 'Estimasi ' + rpn(i.est_cost)}${i.store ? ' &middot; ' + esc(i.store) : ''}</div>
             ${i.notes ? `<div class="text-sm text-muted">${esc(i.notes)}</div>` : ''}
           </div>
           <button data-iedit="${i.id}" aria-label="Ubah ${esc(i.name)}" class="${EDIT_BTN}">${PENCIL}</button></div>`).join('');
@@ -750,7 +765,7 @@
           <button data-ledit="${l.id}" aria-label="Ubah daftar ${esc(l.name)}" class="${EDIT_BTN} -mt-2 -mr-2">${PENCIL}</button>
         </div>
         <div class="mt-2">${rows}</div>
-        <button data-iadd="${l.id}" class="mt-1 min-h-touch w-full rounded-lg border border-line-strong text-ink-3 text-sm font-medium hover:bg-hover transition-colors duration-150">+ Tambah item</button>
+        <button data-iadd="${l.id}" class="mt-1 min-h-touch w-full rounded-lg border border-control text-ink-3 text-sm font-medium hover:bg-hover transition-colors duration-150">+ Tambah item</button>
       </article>`;
     }).join('');
   }
@@ -845,12 +860,12 @@
       const x = m[c], pct = x.alloc > 0 ? (x.commit / x.alloc) * 100 : 0;
       const color = pct > 100 ? 'bg-rose-600' : pct >= 80 ? 'bg-amber-500' : 'bg-brand-mid';
       const status = x.alloc <= 0 ? '<span class="text-muted">Belum ada alokasi</span>'
-        : pct > 100 ? `<span class="text-danger-ink font-medium">Melebihi alokasi ${rp(x.commit - x.alloc)}</span>`
-        : `<span class="${pct >= 80 ? 'text-warn-ink' : 'text-muted'}">Sisa alokasi ${rp(x.alloc - x.commit)}</span>`;
+        : pct > 100 ? `<span class="text-danger-ink font-medium">Melebihi alokasi ${rpn(x.commit - x.alloc)}</span>`
+        : `<span class="${pct >= 80 ? 'text-warn-ink' : 'text-muted'}">Sisa alokasi ${rpn(x.alloc - x.commit)}</span>`;
       return `<div class="py-2 border-t border-line-soft first:border-t-0">
-        <div class="flex justify-between gap-2 items-baseline"><span class="font-medium text-ink-2">${esc(c)}</span><span class="text-sm tabular-nums">${rp(x.commit)}${x.alloc > 0 ? ' / ' + rp(x.alloc) : ''}</span></div>
+        <div class="flex justify-between gap-2 items-baseline"><span class="min-w-0 font-medium text-ink-2">${esc(c)}</span><span class="shrink-0 whitespace-nowrap text-sm tabular-nums">${rp(x.commit)}${x.alloc > 0 ? ' / ' + rp(x.alloc) : ''}</span></div>
         ${x.alloc > 0 ? `<div class="mt-1 h-2 rounded-full bg-fill-2 overflow-hidden" role="progressbar" aria-label="${esc(c)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(100, Math.round(pct))}"><div class="h-full ${color}" style="width:${Math.min(pct, 100)}%"></div></div>` : ''}
-        <div class="text-xs mt-1 tabular-nums">${status} <span class="text-muted">| Sudah dibayar ${rp(x.paid)}</span></div></div>`;
+        <div class="text-sm mt-1 tabular-nums">${status} <span class="text-muted">&middot; Sudah dibayar ${rpn(x.paid)}</span></div></div>`;
     }).join('');
     const foot = allocSum <= 0 ? '' : cap > 0 && allocSum > cap
       ? `<div class="mt-2 text-sm text-danger-ink">Total alokasi ${rp(allocSum)} melebihi plafon sebesar ${rp(allocSum - cap)}.</div>`
@@ -867,7 +882,7 @@
   }
   function openCats() {
     const cur = Object.fromEntries(state.catbud.map((c) => [c.category, c.amount]));
-    $('cats-fields').innerHTML = BUDGET_CATS.map((c, i) => `<div class="flex items-center gap-2"><label for="c-${i}" class="flex-1 text-sm font-medium text-ink-3">${esc(c)}</label><input id="c-${i}" data-cat="${esc(c)}" inputmode="numeric" class="w-40 min-h-touch rounded-lg border border-line-strong px-3 text-base text-right tabular-nums" value="${idr(cur[c])}"></div>`).join('');
+    $('cats-fields').innerHTML = BUDGET_CATS.map((c, i) => `<div class="flex items-center gap-2"><label for="c-${i}" class="flex-1 text-sm font-medium text-ink-3">${esc(c)}</label><input id="c-${i}" data-cat="${esc(c)}" inputmode="numeric" class="w-40 min-h-touch rounded-lg border border-control px-3 text-base text-right tabular-nums" value="${idr(cur[c])}"></div>`).join('');
     updateCatsSum(); $('dlg-cats').showModal();
   }
   $('cats-fields').addEventListener('input', (e) => { const i = e.target; i.value = i.value === '' ? '' : idr(num(i.value)); updateCatsSum(); });
@@ -958,7 +973,7 @@
     const nextTxt = next
       ? `<div class="mt-3 pt-3 border-t border-line text-sm"><div class="text-muted">Tagihan terdekat</div>
          <div class="font-medium">${esc(vendorName(next.vendor_id))}: ${esc(next.label)} ${rp(next.amount)}</div>
-         <div>${fmtDate(next.due_date)} &nbsp;|&nbsp; ${payBadge(next)}</div></div>`
+         <div><span class="whitespace-nowrap">${fmtDate(next.due_date)}</span> &middot; ${payBadge(next)}</div></div>`
       : '';
     sum.innerHTML = `<div class="card">
       <div class="text-sm text-muted">Sisa tagihan vendor</div>
@@ -985,27 +1000,27 @@
             </span></button>
           <div class="flex-1 min-w-0 py-2">
             <div class="font-medium tabular-nums">${esc(p.label)}: ${rp(p.amount)}</div>
-            <div class="text-sm text-muted">Tenggat ${fmtDate(p.due_date)} &nbsp;|&nbsp; ${payBadge(p)}</div>
+            <div class="text-sm text-muted"><span class="whitespace-nowrap">Tenggat ${fmtDate(p.due_date)}</span> &middot; ${payBadge(p)}</div>
           </div>
           ${p.receipt_path ? `<button data-receipt="${p.id}" aria-label="Lihat bukti bayar ${esc(p.label)} ${esc(v.name)}" class="${EDIT_BTN}">${IMG_ICON}</button>` : ''}
           <button data-pedit="${p.id}" aria-label="Ubah pembayaran ${esc(p.label)} ${esc(v.name)}" class="${EDIT_BTN}">${PENCIL}</button></div>`).join('');
       const vpct = Number(v.total_cost) > 0 ? Math.min(100, (vPaid / Number(v.total_cost)) * 100) : 0;
       const tag = (x, c) => `<span class="rounded-full px-2 py-0.5 text-xs font-semibold ${c}">${x}</span>`;
-      const pill = 'inline-flex items-center min-h-touch px-4 rounded-full border border-line-strong text-sm font-medium text-ink-3 hover:bg-hover';
+      const pill = 'inline-flex items-center min-h-touch px-4 rounded-full border border-control text-sm font-medium text-ink-3 hover:bg-hover';
       return `<article class="rounded-xl bg-surface border p-4 ${late ? 'border-danger-line' : 'border-line'}">
         <div class="flex items-start gap-1">
           <div class="flex-1 min-w-0">
             <div class="flex flex-wrap items-center gap-2"><h3 class="font-semibold text-ink">${esc(v.name)}</h3>${tag(esc(v.category), 'bg-fill text-ink-4')}${late ? tag('Terlambat', 'bg-danger-soft text-danger-ink') : ''}</div>
             <div class="mt-3 h-2 rounded-full bg-fill-2 overflow-hidden" role="progressbar" aria-label="Terbayar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(vpct)}"><div class="h-full bg-brand" style="width:${vpct}%"></div></div>
-            <div class="mt-1 flex justify-between gap-2 text-sm tabular-nums"><span class="text-muted">Dibayar ${rp(vPaid)} dari ${rp(v.total_cost)}</span><span class="font-semibold ${settled ? 'text-brand-ink-2' : 'text-ink'}">${settled ? 'Lunas' : 'Sisa ' + rp(rest)}</span></div>
-            ${fin.unsched > 0 ? `<div class="mt-1 text-sm text-warn-ink tabular-nums">${rp(fin.unsched)} belum dijadwalkan pembayarannya</div>` : fin.over > 0 ? `<div class="mt-1 text-sm text-danger-ink tabular-nums">Jadwal bayar melebihi kontrak ${rp(fin.over)}</div>` : ''}
+            <div class="mt-1 flex flex-wrap justify-between gap-x-3 text-sm tabular-nums"><span class="whitespace-nowrap text-muted">Dibayar ${rp(vPaid)} dari ${rp(v.total_cost)}</span><span class="ml-auto whitespace-nowrap font-semibold ${settled ? 'text-brand-ink-2' : 'text-ink'}">${settled ? 'Lunas' : 'Sisa ' + rp(rest)}</span></div>
+            ${fin.unsched > 0 ? `<div class="mt-1 text-sm text-warn-ink tabular-nums">${rpn(fin.unsched)} belum dijadwalkan pembayarannya</div>` : fin.over > 0 ? `<div class="mt-1 text-sm text-danger-ink tabular-nums">Jadwal bayar melebihi kontrak ${rp(fin.over)}</div>` : ''}
             ${v.notes ? `<div class="mt-1 text-sm text-muted">${esc(v.notes)}</div>` : ''}
           </div>
           <button data-vedit="${v.id}" aria-label="Ubah vendor ${esc(v.name)}" class="${EDIT_BTN} -mt-2 -mr-2">${PENCIL}</button>
         </div>
         ${v.phone ? `<div class="mt-2 flex flex-wrap gap-2"><a href="tel:${esc(v.phone.replace(/[^\d+]/g, ''))}" class="${pill}">Telepon</a><button data-wa="${v.id}" class="${pill}">WhatsApp</button></div>` : ''}
         <div class="mt-2">${payRows}</div>
-        <button data-padd="${v.id}" class="mt-1 min-h-touch w-full rounded-lg border border-line-strong text-ink-3 text-sm font-medium hover:bg-hover transition-colors duration-150">+ Tambah pembayaran</button>
+        <button data-padd="${v.id}" class="mt-1 min-h-touch w-full rounded-lg border border-control text-ink-3 text-sm font-medium hover:bg-hover transition-colors duration-150">+ Tambah pembayaran</button>
       </article>`;
     }).join('');
   }
@@ -1103,11 +1118,11 @@
     for (let d = 1; d <= dim; d++) {
       const ds = `${y}-${pad(m + 1)}-${pad(d)}`, ev = agenda[ds] || [];
       const sel = ds === state.calSel;
-      const cls = sel ? 'border-brand-edge bg-brand-soft' : ds === today ? 'border-brand-line-2 bg-surface' : 'border-transparent bg-surface';
+      const cls = sel ? 'border-brand-edge bg-brand-soft' : ds === today ? 'border-brand-line-2 bg-surface' : 'border-line-soft bg-surface';
       const dots = ds === wd
         ? '<span class="text-xs font-semibold text-brand-ink-2 leading-none">Hari H</span>'
         : ev.slice(0, 3).map((e) => `<span class="w-1.5 h-1.5 ${e.type === 'task' ? 'rounded-full' : 'rounded-xs'} ${dotColor(e)}"></span>`).join('') + (ev.length > 3 ? '<span class="text-xs leading-none text-ink-4">+</span>' : '');
-      html += `<button data-day="${ds}" aria-pressed="${sel}" aria-label="${d} ${$('cal-title').textContent}${ds === today ? ', hari ini' : ''}${ds === wd ? ', Hari H' : ''}, ${ev.length} agenda" class="h-14 lg:h-16 rounded-lg border flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${cls} ${ds === wd ? 'ring-2 ring-selected' : ''}">
+      html += `<button data-day="${ds}" aria-pressed="${sel}" aria-label="${d} ${$('cal-title').textContent}${ds === today ? ', hari ini' : ''}${ds === wd ? ', Hari H' : ''}, ${ev.length} agenda" class="h-12 sm:h-14 lg:h-16 rounded-lg border flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${cls} ${ds === wd ? 'ring-2 ring-selected' : ''}">
         <span class="text-sm ${ds === today ? 'font-bold text-brand-ink-2' : 'text-ink-2'}">${d}</span>
         <span class="flex items-center gap-0.5 h-3">${dots}</span></button>`;
     }
@@ -1122,14 +1137,14 @@
     const tasks = ev.filter((e) => e.type === 'task'), pays = ev.filter((e) => e.type === 'pay');
     html += tasks.map(({ t }) => `<article class="flex items-start gap-1 rounded-xl bg-surface border py-1 pl-3 pr-1 ${isOverdue(t) ? 'border-danger-line' : 'border-line'}">
         <div class="flex-1 min-w-0 py-2">
-          <div class="flex items-center gap-2 text-xs"><span class="rounded-full bg-brand-soft text-brand-ink-3 px-2 py-0.5 font-semibold">Tugas</span><span class="text-muted">${esc(t.category)}</span></div>
+          <div class="flex items-center gap-2 text-sm"><span class="rounded-full bg-brand-soft text-brand-ink-3 px-2 py-0.5 font-semibold">Tugas</span><span class="text-muted">${esc(t.category)}</span></div>
           <div class="font-medium ${t.is_completed ? 'line-through text-muted' : ''}">${esc(t.title)}</div>
           <div class="text-sm">${t.is_completed ? '<span class="text-brand-ink-2">Selesai</span>' : isOverdue(t) ? '<span class="text-danger-ink font-medium">Terlambat</span>' : '<span class="text-muted">Belum selesai</span>'}</div>
         </div>
         <button data-ctask="${t.id}" aria-label="Ubah tugas ${esc(t.title)}" class="${EDIT_BTN}">${PENCIL}</button></article>`).join('');
     html += pays.map(({ p }) => `<article class="flex items-start gap-1 rounded-xl bg-surface border py-1 pl-3 pr-1 ${payStatus(p) === 'overdue' ? 'border-danger-line' : 'border-line'}">
         <div class="flex-1 min-w-0 py-2">
-          <div class="flex items-center gap-2 text-xs"><span class="rounded-full bg-warn-soft text-warn-ink-2 px-2 py-0.5 font-semibold">Pembayaran</span><span class="text-muted">${esc(vendorName(p.vendor_id))}</span></div>
+          <div class="flex items-center gap-2 text-sm"><span class="rounded-full bg-warn-soft text-warn-ink-2 px-2 py-0.5 font-semibold">Pembayaran</span><span class="text-muted">${esc(vendorName(p.vendor_id))}</span></div>
           <div class="font-medium tabular-nums">${esc(p.label)}: ${rp(p.amount)}</div>
           <div class="text-sm">${payBadge(p)}</div>
         </div>
@@ -1294,12 +1309,24 @@
       el.innerHTML = '<div class="skeleton skeleton-pulse h-40"></div><div class="skeleton skeleton-pulse h-32"></div><div class="skeleton skeleton-pulse h-28"></div>'; return;
     }
     const today = todayStr(), MAX = 5;
-    const card = (title, right, body) => `<section class="rounded-xl bg-surface border border-line p-4"><div class="flex items-baseline justify-between gap-2"><h2 class="font-semibold text-ink-2">${title}</h2>${right || ''}</div>${body}</section>`;
-    const empty = (txt) => `<p class="mt-2 text-sm text-muted">${txt}</p>`;
-    const link = (attrs, txt) => `<button ${attrs} class="mt-1 min-h-touch text-sm font-medium text-brand-ink-2 hover:underline">${txt}</button>`;
+    const ico = (d, cls) => `<svg class="${cls}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="${d}"/></svg>`;
+    const I = {
+      task: 'M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2',
+      bill: 'M3 8a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V8zM3 11h18M7 15h3',
+      warn: 'M12 9v4m0 4h.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z',
+      check: 'M5 13l4 4L19 7',
+      next: 'M9 5l7 7-7 7'
+    };
+    const DANGER = 'bg-danger-soft text-danger-ink', WARN = 'bg-warn-soft text-warn-ink-2';
+    const pill = (txt, tone) => `<span class="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-sm font-medium ${tone}">${txt}</span>`;
+    /* Kartu: ikon, judul + subjudul di kiri, ringkasan di kanan (tidak boleh terpotong ke baris baru) */
+    const card = (icon, title, sub, right, body) => `<section class="rounded-xl bg-surface border border-line p-4"><div class="flex items-center gap-3"><span class="shrink-0 w-10 h-10 rounded-xl bg-brand-soft text-brand-ink-2 flex items-center justify-center">${ico(icon, 'w-5 h-5')}</span><div class="min-w-0 flex-1"><h3 class="font-semibold text-ink-2 leading-tight">${title}</h3>${sub ? `<p class="text-sm text-muted">${sub}</p>` : ''}</div>${right || ''}</div>${body}</section>`;
+    const empty = (txt) => `<p class="mt-3 text-sm text-muted">${txt}</p>`;
+    const calm = (txt) => `<div class="mt-3 flex items-start gap-3 rounded-lg bg-brand-soft p-3 text-brand-ink-3"><span class="shrink-0 mt-0.5">${ico(I.check, 'w-5 h-5')}</span><p class="text-sm">${txt}</p></div>`;
+    const link = (attrs, txt) => `<button ${attrs} class="mt-1 min-h-touch w-full inline-flex items-center justify-center gap-1 rounded-lg text-sm font-medium text-brand-ink-2 hover:bg-brand-soft transition-colors duration-150">${txt}${ico(I.next, 'w-4 h-4')}</button>`;
     const box = () => `<span class="w-6 h-6 rounded-md border-2 bg-surface border-line-control"></span>`;
 
-    if (hasNoData()) { el.innerHTML = card('Data belum bisa dimuat', '', empty('Periksa koneksi internet, lalu coba lagi.') + link('data-hact="retry"', 'Coba lagi')); return; }
+    if (hasNoData()) { el.innerHTML = card(I.warn, 'Data belum bisa dimuat', '', '', empty('Periksa koneksi internet, lalu coba lagi.') + link('data-hact="retry"', 'Coba lagi')); return; }
 
     /* Tugas terlambat dan hari ini */
     const open = state.tasks.filter((t) => !t.is_completed);
@@ -1311,18 +1338,25 @@
       tBody = empty('Belum ada tugas.');
     } else if (!items.length) {
       const next = open.filter((t) => t.due_date > today).sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
-      tBody = empty('Tidak ada tugas terlambat atau jatuh tempo hari ini.' + (next ? ` Berikutnya: ${esc(next.title)} (${fmtDate(next.due_date)}).` : ' Semua tugas sudah selesai.'));
+      tBody = calm('Tidak ada tugas terlambat atau jatuh tempo hari ini.' + (next ? ` Berikutnya: ${esc(next.title)} (${fmtDate(next.due_date)}).` : ' Semua tugas sudah selesai.'));
     } else {
       tBody = '<div class="mt-2">' + shown.map((t) => {
         const od = t.due_date < today;
-        const sub = (od ? `<span class="text-danger-ink font-medium">Terlambat ${-daysUntil(t.due_date)} hari</span>` : '<span class="text-warn-ink font-medium">Jatuh tempo hari ini</span>')
-          + (t.priority === 'tinggi' ? ' &nbsp;|&nbsp; <span class="text-danger-ink">Prioritas tinggi</span>' : '') + (t.assignee ? ` &nbsp;|&nbsp; PJ: ${esc(t.assignee)}` : '');
+        const badges = pill(od ? `Terlambat ${-daysUntil(t.due_date)} hari` : 'Jatuh tempo hari ini', od ? DANGER : WARN)
+          + (t.priority === 'tinggi' ? pill('Prioritas tinggi', 'border border-danger-line text-danger-ink') : '');
+        const info = [esc(t.category)].concat(t.assignee ? ['PJ: ' + esc(t.assignee)] : []).join(' · ');
         return `<div class="flex items-start gap-1 border-t border-line-soft first:border-t-0">
           <button data-htoggle="${t.id}" role="checkbox" aria-checked="false" aria-label="Tandai ${esc(t.title)} selesai" class="shrink-0 w-11 h-11 flex items-center justify-center">${box()}</button>
-          <div class="flex-1 min-w-0 py-2"><div class="font-medium text-ink-2">${esc(t.title)}</div><div class="text-sm text-muted">${esc(t.category)} &nbsp;|&nbsp; ${sub}</div></div></div>`;
+          <div class="flex-1 min-w-0 py-2"><div class="font-medium text-ink-2">${esc(t.title)}</div><div class="text-sm text-muted">${info}</div><div class="mt-1 flex flex-wrap items-center gap-1.5">${badges}</div></div></div>`;
       }).join('') + '</div>' + (items.length > MAX ? link(`data-hact="${overdue.length ? 'overdue' : 'tasks'}"`, `Lihat ${items.length - MAX} tugas lainnya`) : '');
     }
-    const tRight = overdue.length ? `<span class="text-sm font-medium text-danger-ink">${overdue.length} terlambat</span>` : '';
+    const soonAll = open.filter((t) => t.due_date > today && t.due_date <= addDays(7)).sort((a, b) => a.due_date.localeCompare(b.due_date));
+    if (state.tasks.length && soonAll.length) {
+      tBody += `<div class="mt-3 pt-3 border-t border-line"><div class="text-sm font-medium text-muted">Segera, 7 hari ke depan</div>` + soonAll.slice(0, 3).map((t) => `<div class="flex items-start gap-1">
+          <button data-htoggle="${t.id}" role="checkbox" aria-checked="false" aria-label="Tandai ${esc(t.title)} selesai" class="shrink-0 w-11 h-11 flex items-center justify-center">${box()}</button>
+          <div class="flex-1 min-w-0 py-2"><div class="font-medium text-ink-2">${esc(t.title)}</div><div class="text-sm text-muted"><span class="whitespace-nowrap">Tenggat ${fmtDate(t.due_date)}</span> &middot; ${esc(t.category)}</div></div></div>`).join('') + (soonAll.length > 3 ? link('data-hact="tasks"', `Lihat ${soonAll.length - 3} tugas lainnya`) : '') + '</div>';
+    }
+    const tRight = overdue.length ? `<span class="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-medium ${DANGER}">${overdue.length} terlambat</span>` : '';
 
     /* Tagihan vendor: terlambat + 7 hari ke depan */
     const unpaid = state.payments.filter((p) => !p.paid_date).sort((a, b) => a.due_date.localeCompare(b.due_date));
@@ -1331,16 +1365,19 @@
     let bBody;
     if (!bills.length) {
       const next = unpaid[0];
-      bBody = empty('Tidak ada tagihan yang terlambat atau jatuh tempo dalam 7 hari ke depan.' + (next ? ` Berikutnya: ${esc(vendorName(next.vendor_id))}, ${esc(next.label)} ${rp(next.amount)} (${fmtDate(next.due_date)}).` : ''));
+      bBody = calm('Tidak ada tagihan yang terlambat atau jatuh tempo dalam 7 hari ke depan.' + (next ? ` Berikutnya: ${esc(vendorName(next.vendor_id))}, ${esc(next.label)} ${rp(next.amount)} (${fmtDate(next.due_date)}).` : ''));
     } else {
-      bBody = '<div class="mt-2">' + billShown.map((p) => `<div class="flex items-start gap-1 border-t border-line-soft first:border-t-0">
+      bBody = '<div class="mt-2">' + billShown.map((p) => {
+        const d = daysUntil(p.due_date);
+        const badge = p.due_date < today ? pill(`Terlambat ${-d} hari`, DANGER) : pill(d === 0 ? 'Jatuh tempo hari ini' : `Jatuh tempo ${d} hari lagi`, WARN);
+        return `<div class="flex items-start gap-1 border-t border-line-soft first:border-t-0">
           <button data-hptoggle="${p.id}" role="checkbox" aria-checked="false" aria-label="Tandai ${esc(p.label)} ${esc(vendorName(p.vendor_id))} dibayar" class="shrink-0 w-11 h-11 flex items-center justify-center">${box()}</button>
-          <div class="flex-1 min-w-0 py-2"><div class="font-medium text-ink-2">${esc(vendorName(p.vendor_id))}</div>
-            <div class="text-sm tabular-nums text-ink-4">${esc(p.label)}: ${rp(p.amount)}</div>
-            <div class="text-sm">${payBadge(p)}</div></div></div>`).join('') + '</div>' +
+          <div class="flex-1 min-w-0 py-2 pr-1"><div class="flex items-baseline justify-between gap-3"><span class="min-w-0 font-medium text-ink-2">${esc(vendorName(p.vendor_id))}</span><span class="shrink-0 whitespace-nowrap font-semibold tabular-nums text-ink-2">${rp(p.amount)}</span></div>
+            <div class="text-sm text-muted">${esc(p.label)}</div><div class="mt-1">${badge}</div></div></div>`;
+      }).join('') + '</div>' +
         (bills.length > MAX ? link('data-hact="vendor"', `Lihat ${bills.length - MAX} tagihan lainnya`) : '');
     }
-    const bRight = bills.length ? `<span class="text-sm font-medium tabular-nums text-ink-3">${rp(billTotal)}</span>` : '';
+    const bRight = bills.length ? `<span class="shrink-0 whitespace-nowrap font-semibold tabular-nums text-ink-2">${rp(billTotal)}</span>` : '';
 
     /* Ringkasan: satu sumber untuk hero dan dua tile */
     const total = state.tasks.length, done = state.tasks.filter((t) => t.is_completed).length;
@@ -1348,29 +1385,34 @@
     const b = budgetStats();
     const barColor = b.pct > 90 ? 'bg-rose-600' : b.pct >= 75 ? 'bg-amber-500' : 'bg-brand-mid';
     const after = b.left - b.vDue - b.vUnsched - b.bUnpaid;
-    const short = (n) => { const a = Math.abs(n), sg = n < 0 ? '-' : ''; return a >= 1e9 ? `${sg}Rp ${+(a / 1e9).toFixed(1)} M` : a >= 1e6 ? `${sg}Rp ${+(a / 1e6).toFixed(1)} jt` : sg + rp(a); };
-    const lateBills = bills.filter((p) => p.due_date < today).length, issues = [];
-    if (overdue.length) issues.push(`${overdue.length} tugas terlambat`);
-    if (lateBills) issues.push(`${lateBills} tagihan terlambat`);
-    if (b.cap > 0 && after < 0) issues.push('anggaran diperkirakan melebihi plafon');
+    const dec = (n) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 1 }).format(n);   // koma desimal: 123,5 (bukan 123.5)
+    const short = (n) => { const a = Math.abs(n), sg = n < 0 ? '-' : ''; return a >= 1e9 ? `${sg}Rp ${dec(a / 1e9)} M` : a >= 1e6 ? `${sg}Rp ${dec(a / 1e6)} jt` : sg + rp(a); };
+    const lateBills = bills.filter((p) => p.due_date < today).length, issues = [];   // [teks, tujuan] : tombol di hero langsung membuka masalahnya
+    if (overdue.length) issues.push([`${overdue.length} tugas terlambat`, 'overdue']);
+    if (lateBills) issues.push([`${lateBills} tagihan terlambat`, 'vendor']);
+    if (b.cap > 0 && after < 0) issues.push(['Anggaran melebihi plafon', 'budget']);
     const wd = state.settings ? new Date(state.settings.wedding_date) : null, noDate = !wd || datePlaceholder();
     const cd = noDate ? null : daysToWedding(wd);
     const big = noDate ? 'Atur hari H' : cd <= 0 ? 'Hari H' : 'H-' + cd;
     const wdTxt = noDate ? 'Tanggal belum diatur' : wd.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    const hero = `<div class="lg:col-span-2 rounded-2xl bg-emerald-700 text-white p-5">
-      <div class="flex items-start justify-between gap-3"><div><div class="text-4xl font-bold tabular-nums leading-none">${big}</div><div class="mt-2 text-sm text-emerald-100">${wdTxt}</div></div>
-      <span class="shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${issues.length || noDate ? 'bg-amber-300 text-amber-950' : 'bg-surface text-brand-ink-3'}">${issues.length || noDate ? 'Perlu perhatian' : 'Aman'}</span></div>
+    const ring = (pct) => { const r = 34, c = 2 * Math.PI * r; return `<div class="relative shrink-0 w-24 h-24 text-white" role="img" aria-label="${pct}% tugas selesai"><svg viewBox="0 0 88 88" class="w-24 h-24 -rotate-90" aria-hidden="true"><circle cx="44" cy="44" r="${r}" fill="none" stroke="currentColor" stroke-opacity=".2" stroke-width="8"/><circle cx="44" cy="44" r="${r}" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - pct / 100)).toFixed(1)}"/></svg><div class="absolute inset-0 flex flex-col items-center justify-center leading-none"><span class="text-xl font-bold tabular-nums">${pct}%</span><span class="mt-1 text-xs text-emerald-100">selesai</span></div></div>`; };
+    const attn = issues.length || noDate;
+    const hero = `<div class="lg:col-span-2 relative isolate overflow-hidden rounded-2xl bg-emerald-700 bg-linear-to-br from-emerald-700 to-emerald-800 text-white p-5 sm:p-6"><span aria-hidden="true" class="pointer-events-none absolute -z-10 -right-12 -top-16 w-56 h-56 rounded-full bg-white/5"></span><span aria-hidden="true" class="pointer-events-none absolute -z-10 right-10 -bottom-24 w-48 h-48 rounded-full bg-white/5"></span>
+      <div class="flex items-center gap-2"><span class="text-sm font-medium text-emerald-100">Hari pernikahan</span>
+        <span class="ml-auto shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${attn ? 'bg-amber-300 text-amber-950' : 'bg-surface text-brand-ink-3'}"><span aria-hidden="true" class="w-1.5 h-1.5 rounded-full bg-current"></span>${attn ? 'Perlu perhatian' : 'Aman'}</span></div>
+      <div class="mt-3 flex items-end justify-between gap-4"><div class="min-w-0"><div class="${noDate ? 'text-3xl' : 'text-5xl sm:text-6xl'} font-bold tracking-tight leading-none">${big}</div><div class="mt-3 text-sm text-emerald-100">${wdTxt}</div></div>${total ? ring(tp) : ''}</div>
       ${noDate ? `<p class="mt-3 text-sm text-emerald-50">Hitung mundur dan tenggat template checklist belum akurat sampai tanggal hari H diisi.</p><button data-hact="settings" class="mt-2 min-h-touch px-4 rounded-lg bg-surface text-brand-ink-3 text-sm font-semibold">Atur tanggal hari H</button>` : ''}
-      ${issues.length ? `<p class="mt-3 text-base font-medium">Perlu ditangani: ${issues.join(', ')}.</p>` : ''}</div>`;
-    const tile = (act, label, val, sub, pct, bar, col) => `<button data-hact="${act}" class="rounded-xl bg-surface border border-line p-3 text-left"><div class="text-xs text-muted">${label}</div><div class="mt-1 text-lg font-bold tabular-nums ${col || 'text-ink'}">${val}</div><div class="mt-2 h-1.5 rounded-full bg-fill-2 overflow-hidden"><div class="h-full ${bar}" style="width:${pct}%"></div></div><div class="mt-1 text-xs text-muted tabular-nums">${sub}</div></button>`;
-    const kpi = `<div class="lg:col-span-2 grid grid-cols-2 gap-2">
-      ${tile('tasks', 'Tugas selesai', tp + '%', `${done} dari ${total}`, tp, 'bg-brand')}
-      ${tile('budget', 'Sisa saldo', short(b.left), Math.round(b.pct) + '% terpakai', Math.min(b.pct, 100), barColor, b.left < 0 ? 'text-danger-ink' : '')}</div>`;
+      ${issues.length ? `<div class="mt-4 flex flex-wrap gap-2" role="group" aria-label="Perlu ditangani">${issues.map(([t, act]) => `<button data-hact="${act}" class="min-h-touch inline-flex items-center gap-1 rounded-full bg-white/15 hover:bg-white/25 pl-4 pr-3 text-sm font-medium text-white transition-colors duration-150">${t}${ico(I.next, 'w-4 h-4')}</button>`).join('')}</div>` : ''}</div>`;
+    const tile = (act, icon, label, val, sub, pct, bar, col, subCol) => `<button data-hact="${act}" class="rounded-xl bg-surface border border-line p-4 text-left hover:bg-hover active:bg-hover-2 transition-colors duration-150"><div class="flex items-center gap-2 text-sm text-muted">${ico(icon, 'w-5 h-5 shrink-0 text-brand-ink')}<span class="whitespace-nowrap">${label}</span>${ico(I.next, 'w-4 h-4 ml-auto shrink-0 text-muted hidden sm:block')}</div><div class="mt-2 text-2xl font-bold tabular-nums leading-tight ${col || 'text-ink'}">${val}</div>${bar ? `<div class="mt-2 h-2 rounded-full bg-fill-2 overflow-hidden" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><div class="h-full rounded-full ${bar}" style="width:${pct}%"></div></div>` : ''}<div class="mt-2 text-sm tabular-nums ${subCol || 'text-muted'}">${sub}</div></button>`;
+    const billSub = lateBills ? `${lateBills} terlambat` : bills.length ? `${bills.length} dalam 7 hari` : 'Tidak ada tagihan';
+    const kpi = `<div class="lg:col-span-2 grid grid-cols-2 gap-3">
+      ${tile('budget', I.bill, 'Sisa saldo', short(b.left), Math.round(b.pct) + '% terpakai', Math.min(b.pct, 100), barColor, b.left < 0 ? 'text-danger-ink' : '')}
+      ${tile('vendor', I.warn, 'Tagihan 7 hari', bills.length ? short(billTotal) : 'Rp 0', billSub, 0, '', lateBills ? 'text-danger-ink' : '', lateBills ? 'text-danger-ink font-medium' : '')}</div>`;
     const steps = [[b.cap > 0, 'Isi total plafon anggaran', 'settings'], [state.tasks.length > 0, 'Isi checklist tugas', 'template'], [state.vendors.length > 0, 'Tambah vendor dan jadwal bayar', 'vendor']];
-    const setup = steps.every((x) => x[0]) ? '' : `<section class="lg:col-span-2 rounded-xl bg-surface border border-brand-line p-4"><h2 class="font-semibold text-ink-2">Mulai dari sini <span class="text-sm font-normal text-muted">${steps.filter((x) => x[0]).length}/${steps.length} langkah</span></h2>
-      <ol class="mt-2">${steps.map(([ok, t, act], i) => `<li class="flex items-center gap-3 py-1 border-t border-line-soft first:border-t-0"><span class="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${ok ? 'bg-brand text-white' : 'border-2 border-line-strong text-muted'}">${ok ? '&#10003;' : i + 1}</span><span class="flex-1 ${ok ? 'text-muted line-through' : 'font-medium text-ink-2'}">${t}</span>${ok ? '' : `<button data-hact="${act}" class="min-h-touch px-3 text-sm font-semibold text-brand-ink-2">Mulai</button>`}</li>`).join('')}</ol></section>`;
+    const setup = steps.every((x) => x[0]) ? '' : `<section class="lg:col-span-2 rounded-xl bg-surface border border-brand-line p-4"><h3 class="font-semibold text-ink-2">Mulai dari sini <span class="text-sm font-normal text-muted">${steps.filter((x) => x[0]).length}/${steps.length} langkah</span></h3>
+      <ol class="mt-2">${steps.map(([ok, t, act], i) => `<li class="flex items-center gap-3 py-1 border-t border-line-soft first:border-t-0"><span class="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${ok ? 'bg-brand text-white' : 'border-2 border-control text-muted'}">${ok ? '&#10003;' : i + 1}</span><span class="flex-1 ${ok ? 'text-muted line-through' : 'font-medium text-ink-2'}">${t}</span>${ok ? '' : `<button data-hact="${act}" class="min-h-touch px-3 text-sm font-semibold text-brand-ink-2">Mulai</button>`}</li>`).join('')}</ol></section>`;
     el.innerHTML = hero + setup + kpi +
-      card('Perlu dikerjakan', tRight, tBody) + card('Tagihan vendor 7 hari ke depan', bRight, bBody);
+      card(I.task, 'Perlu dikerjakan', 'Terlambat dan hari ini', tRight, tBody) + card(I.bill, 'Tagihan vendor', '7 hari ke depan', bRight, bBody);
   }
   $('home-body').addEventListener('click', (e) => {
     const t = e.target.closest('[data-htoggle]'); if (t) return toggleTask(t.dataset.htoggle);
@@ -1380,8 +1422,8 @@
     if (act === 'template') return openTemplate();
     if (act === 'retry') return refreshAll();
     if (act === 'settings') return $('btn-settings').click();
-    if (act === 'overdue') { state.fStatus = 'all'; state.fCat = ''; state.fTime = 'overdue'; $('f-cat').value = ''; $('f-time').value = 'overdue'; renderChips(); renderTasks(); return setView('task'); }
-    setView(act === 'tasks' ? 'task' : act);
+    if (act === 'overdue') { state.fStatus = 'all'; state.fCat = ''; state.fTime = 'overdue'; $('f-cat').value = ''; $('f-time').value = 'overdue'; renderChips(); renderTasks(); return setView('task', { history: 'push', focus: true }); }
+    setView(act === 'tasks' ? 'task' : act, { history: 'push', focus: true });
   });
 
 
@@ -1725,7 +1767,7 @@
     if (p === state.profile && state.ready) return;
     state.profile = p;
     $('profile-name').textContent = PROFILES[p].name;
-    document.title = 'Wedding Planner · ' + PROFILES[p].name;
+    document.title = pageTitle(state.view);
     // kosongkan seluruh data acara sebelumnya agar tidak bercampur
     state.settings = null; state.tasks = []; state.budgets = []; state.catbud = []; state.slists = []; state.sitems = []; state.vendors = []; state.payments = [];
     state.settingsLoaded = false; state.ready = false;
@@ -1739,7 +1781,8 @@
     const n = new Date(); state.cal = { y: n.getFullYear(), m: n.getMonth() }; state.calSel = todayStr();
     $('cd-chip-text').textContent = '...';
     $('countdown').innerHTML = '<div class="skeleton skeleton-pulse h-14"></div>'.repeat(4);
-    setView('home'); renderAll();
+    { const first = bootView || 'home'; bootView = null; setView(first, { history: 'replace' }); }
+    renderAll();
     if (state.authed) { await refreshAll(); state.ready = true; }
   }
 

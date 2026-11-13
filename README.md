@@ -132,3 +132,23 @@ Dua langkah dengan penunjuk di atas: **1 Masuk** (email dan kata sandi, tombol m
 - **Komponen** (`@layer components`): `.field-label`, `.input`, `.btn-primary`, `.btn-ghost`, `.btn-danger-ghost`, `.card`, `.empty-box`. Utilitas khusus: `min-h-touch` (44 px), `pt-safe`, `pb-safe`, `mt-safe`, `mb-safe` (safe-area).
 - Blok `<style>` inline di `index.html` dipindah ke `tailwind.src.css` sehingga ikut diminify dan di-cache.
 - Perubahan kecil yang disengaja: batas `select` dan `textarea` di mode terang kini memakai warna batas kontrol (`#7b8aa0`) seperti `input`; tombol berkas di Pengaturan ikut warna mode gelap.
+
+## Perbaikan audit UI/UX (v26)
+- **Pindah tab**: tiap tampilan punya judul `h2` tersembunyi (`#h-home`, `#h-task`, ...). Saat tab diganti, fokus pindah ke judulnya (pembaca layar membacakan nama tab) dan `document.title` ikut berubah.
+- **Riwayat & Back**: tab memakai hash polos (`#home`, `#task`, `#calendar`, `#vendor`, `#budget`). Tombol Back kembali ke tab sebelumnya, bukan menutup aplikasi; dialog tetap menangkap Back lebih dulu. Tautan seperti `.../#budget` dibuka langsung ke tab itu setelah masuk dan memilih acara.
+- **Kalender**: jarak antarsel `gap-1` di bawah 640 px (sel 44,6 px di layar 360 px), `gap-2` di atasnya.
+- **Batas kontrol**: token baru `border-control` (= `--control-border`, kontras >= 3:1) dipakai semua tombol, chip, label radio, dan kolom isian. `border-line-strong` hanya tersisa untuk garis dekoratif (kotak kosong putus-putus).
+- **Ukuran teks**: baris status dan nominal (pembayaran vendor, arus kas, kategori budget, pil agenda, label kartu Beranda, catatan hitung ganda) naik dari 12 px ke 14 px. Lencana kecil dan keterangan sumbu tetap 12 px.
+
+## Penyegaran Beranda (v27)
+- **Hero**: label "Hari pernikahan", angka H-xx lebih besar, dan masalah yang perlu ditangani kini berupa tombol (`2 tugas terlambat`, `1 tagihan terlambat`, `Anggaran melebihi plafon`) yang langsung membuka tab terkait (tugas terlambat membuka Tugas dengan filter Terlambat).
+- **Kartu**: ikon, judul, subjudul, dan ringkasan di kanan yang tidak lagi terpotong ke baris baru (sebelumnya "Rp 35.000.000" terbelah menjadi dua baris di layar sempit). Judul kartu memakai `h3` di bawah judul tampilan "Beranda".
+- **Baris tugas dan tagihan**: status berupa lencana berwarna (Terlambat / Jatuh tempo hari ini / Prioritas tinggi) menggantikan pemisah ` | ` yang bisa tertinggal di awal baris. Nominal tagihan sejajar dengan nama vendor.
+- **Tile ringkasan**: ikon, angka 24 px, bar 8 px. Format singkat memakai koma desimal ("Rp 123,5 jt", bukan "123.5").
+- **Keadaan kosong**: "tidak ada yang terlambat" tampil sebagai kotak konfirmasi hijau, bukan teks abu-abu polos.
+- Semua gaya memakai token yang sudah ada; satu-satunya kelas baru adalah gradasi hero (`bg-linear-to-br from-emerald-700 to-emerald-800`). Kelas `bg-emerald-700` dipertahankan karena aturan mode gelap di `tailwind.src.css` bergantung padanya.
+
+## Penyempurnaan Beranda (v28)
+- **Tile ringkasan** (Tugas selesai, Sisa saldo): kini punya efek hover, panah di pojok kanan atas sebagai petunjuk bisa diketuk, dan bar progres berperan `progressbar` dengan nilai 0-100 untuk pembaca layar.
+- `CACHE` di `sw.js` sekarang `v28`.
+- **Baris tugas dan tagihan seragam** (v29): info (kategori, PJ, atau label cicilan) selalu di baris sendiri di bawah judul, lencana status di baris berikutnya, sehingga susunan tiap baris sama walau teksnya panjang.
